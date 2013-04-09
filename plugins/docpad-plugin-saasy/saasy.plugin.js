@@ -1,3 +1,4 @@
+// JS version of CoffeeScript extends
 var __hasProp = {}.hasOwnProperty,
   __extends = function(child, parent) {
     for (var key in parent) { 
@@ -12,8 +13,10 @@ var __hasProp = {}.hasOwnProperty,
     return child;
   };
 
+// Pure JS module for DOCPAD
 module.exports = function(BasePlugin) {
   var Saasy,
+      jsFileContents,
       fs = require('fs');
 
   return Saasy = (function(_super) {
@@ -25,40 +28,45 @@ module.exports = function(BasePlugin) {
     }
 
     Saasy.prototype.name = 'saasy';
-    Saasy.prototype.renderDocument = function(opts, next) {
 
-      var extension, file, index, jsFileContents;
-      
-      extension = opts.extension, file = opts.file;
+    Saasy.prototype.renderDocument = function(opts, next) {
+      var extension = opts.extension, 
+          file = opts.file, 
+          index = opts.content.indexOf('</body>'),
+          injectJs = function () {
+            if(index > -1) {
+              // Add the jsFileContents before the body tag
+              opts.content = opts.content.replace('</body>',  jsFileContents + '</body>');
+            } else {
+              // Just inject the jsFileContents to the end of the layout
+              opts.content += jsFileContents;
+            }
+            return next(); // Move on to the next file 
+          };
       
       // Only inject our CMS javascript into Layouts
       if (file.type === 'document' && file.attributes.isLayout) {
-        index = opts.content.indexOf('</body>');
+        if (jsFileContents) {
+          injectJs();
+        }
+
         // Read the contents of our Saasy CMS javascript file
-        fs.readFile(__dirname + '/src/saasy.js', function (err, data) {
+        return fs.readFile(__dirname + '/src/saasy.js', function (err, data) {
           if (err) {
             next(); // Ensure we move on to the next file
             return console.log(err);
           }
-          jsFileContents = '<script>' + data + '</script>';
-          if(index > -1) {
-            opts.content = opts.content.replace('</body>',  jsFileContents + '</body>');
-          }
-          else {
-            opts.content += jsFileContents;
-          }
-          // Move on to the next file
-          next();
-        })
-      }
+
+          jsFileContents = '<script data-owner="saasy">' + data + '</script>';
+          injectJs();
+        });
+      } 
+
+      next(); // Move on to the next file 
     }
 
     return Saasy;
 
   })(BasePlugin);
-
-
-
-
 
 };
