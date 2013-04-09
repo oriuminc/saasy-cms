@@ -1,0 +1,32 @@
+{
+    "name": "docpad-plugin-saasy",
+    "version": "2.0.0",
+    "description": "SaaSy CMS plugin for DOCPAD",
+    "homepage": "https://github.com/your-github-username/docpad-plugin-saasy",
+    "keywords": [
+        "docpad",
+        "docpad-plugin",
+        "CMS"
+    ],
+    "author": "Name <email> (url)",
+    "maintainers": [
+        "Arvin Singla <arvin@myplanetdigital.com> (http://www.myplanetdigital.com)"
+    ],
+    "contributors": [
+        "Arvin Singla <arvin@myplanetdigital.com> (http://www.myplanetdigital.com)"
+    ],
+    "bugs": {
+        "url": "https://github.com/your-github-username/docpad-plugin-saasy/issues"
+    },
+    "repository" : {
+        "type": "git",
+        "url": "http://github.com/your-github-username/docpad-plugin-saasy.git"
+    },
+    "engines" : {
+        "node": ">=0.6.0",
+        "docpad": "6.x"
+    },
+    "dependencies": {
+    },
+    "main": "./saasy.plugin.js"
+}
