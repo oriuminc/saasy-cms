@@ -83,7 +83,7 @@ module.exports = function(BasePlugin) {
           success = '{"success": true}',
           fail =  '{"success": false}';
 
-      // Build the contents of a file to be saved
+      // Build the contents of a file to be saved as a string
       function fileBuilder(req) {
         var key,
             toReturn = '---\n';
@@ -95,7 +95,7 @@ module.exports = function(BasePlugin) {
         return toReturn += '---\n\n' + req.body.content;
       }
 
-      // Write the contents of a file to the file system
+      // Write the contents of a file to DOCPATH documents folder
       function fileWriter(str, req) {
         if (req.body.type && req.body.url) {
           if (!fs.existsSync(config.documentsPaths + '/' + req.body.type)) {
@@ -107,7 +107,33 @@ module.exports = function(BasePlugin) {
         return false;
       }
 
-      // REST like CRUD operations
+      // Deletes a document in the DOCPATH documents folder
+      function fileDeleter(req) {
+        var filePath = config.documentsPaths + '/' + req.body.type + '/' + req.body.url + '.html.md';
+        if (req.body.type && req.body.url) {
+          if(fs.existsSync(filePath)) {
+            fs.unlinkSync(filePath);
+            console.log('File at ' + filePath + ' deleted');
+            return true;
+          }
+        }
+        return false;
+      }
+
+      // Renames an existing file in the DOCPATH documents folder
+      function fileRenamer(req) {
+        var oldPath = config.documentsPaths + '/' + req.body.type + '/' + req.body.url + '.html.md';
+        var newPath = config.documentsPaths + '/' + req.body.type + '/' + req.body.urlNew + '.html.md';
+        if (req.body.type && req.body.url && req.body.urlNew) {
+          if(fs.existsSync(oldPath)) {
+            fs.renameSync(oldPath, newPath)
+            return true;
+          }
+        }
+        return false;
+      }
+
+      // Express REST like CRUD operations
 
       // Save a file
       server.post('/saasy', function (req, res) {
@@ -116,17 +142,26 @@ module.exports = function(BasePlugin) {
         }
         return res.send(fail);
       });
+
       // Delete a file
       server.delete('/saasy', function (req, res) {
-        res.send('API is running');
+        if(fileDeleter(req)) {
+          return res.send(success);
+        }
+        return res.send(fail);
       });
+      
       // Edit a file
       server.post('/saasy/edit', function (req, res) {
         res.send('API is running');
       });
+      
       // Rename a file
       server.post('/saasy/rename', function (req, res) {
-        res.send('API is running');
+        if(fileRenamer(req)) {
+          return res.send(success);
+        }
+        return res.send(fail);
       });
 
     };
