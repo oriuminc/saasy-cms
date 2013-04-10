@@ -1,0 +1,25 @@
+{
+    "contentTypes": [{
+        "name": "Blog Post",
+        "type": "blog",
+        "fields": [{ 
+            "Featured Image": "image"
+        }, {
+            "Authored Date": "date"   
+        }]
+    
+    }, {
+        "name": "Case Study",
+        "type": "casestudy",
+        "fields": [{
+            "Hero Image": "image"
+        },{ 
+            "Project URL": "url"
+        }, {
+            "Teaser Text": "textarea"   
+        }, 
+        {
+            "Pull Quote": "textarea"
+        }]
+    }]
+}

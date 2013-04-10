@@ -1,1 +1,5 @@
-console.log("SaaSy CMS would load here");
+/*globals window, alert*/
+(function (ct) {
+    'use strict';
+    alert(ct);
+}(window.contentTypes || {}));
