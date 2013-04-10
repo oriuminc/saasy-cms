@@ -1,1 +1,1 @@
-alert("ZOMG!");
+console.log("SaaSy CMS would load here");

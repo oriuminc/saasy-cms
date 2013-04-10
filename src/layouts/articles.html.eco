@@ -1,0 +1,7 @@
+---
+layout: 'default'
+---
+
+This is the articles layout
+<h1><%= @document.title %></h1>
+<div class="articles"><%- @content %></div>
