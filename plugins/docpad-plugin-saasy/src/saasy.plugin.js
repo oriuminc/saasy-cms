@@ -18,6 +18,7 @@ module.exports = function(BasePlugin) {
   var Saasy,
       saasyFileContents,
       fs = require('fs'),
+      docpad,
       config;
 
   return Saasy = (function(_super) {
@@ -42,6 +43,8 @@ module.exports = function(BasePlugin) {
 
     // Access our docpad configuration from within our plugin
     Saasy.prototype.docpadReady = function(opts) {
+      docpad = opts.docpad;
+      console.log('');
       config = opts.docpad.config;
       config.contentTypes = getContentTypes();
     }
@@ -53,30 +56,32 @@ module.exports = function(BasePlugin) {
 
       function injectJs() {
          opts.content += saasyFileContents;//opts.content.replace('</body>',  saasyFileContents + '</body>');
-         return next(); // Move on to the next file 
+         next(); // Move on to the next file 
       }
       
       // Only inject our CMS javascript into Layouts
       if (file.type === 'document' && file.attributes.isLayout) {
-        // If we've previously read our saasy cms file then just inject the contents right away
+       // If we've previously read our saasy cms file then just inject the contents right away
         if (saasyFileContents) {
-          injectJs();
+          return injectJs();
         }
         // Read the contents of our Saasy CMS javascript file
         fs.readFile(__dirname + '/saasy.js', function (err, data) {
+        
           if (err) {
             next();
             return console.log(err);
           }
+          
           var cssData = fs.readFileSync(__dirname + '/saasy.css'),
               markup = fs.readFileSync(__dirname + '/saasy.html');
           // Build our JS file contents and inject them into the page markup
           saasyFileContents = '<style data-owner="saasy" type="text/css">' + cssData + '</style>' + markup + '<script data-owner="saasy">var contentTypes=' + JSON.stringify(config.contentTypes) + ';\n' + data + '</script>';
-          injectJs();
+          return injectJs();
         });
-      } 
-
-      next();
+      } else {
+        next();
+      }
     };
 
 
@@ -162,7 +167,11 @@ module.exports = function(BasePlugin) {
         }
         return res.send(fail);
       });
-      
+     
+      server.get('/saasy/document/:type/:filename', function(req, res) {
+        res.send(docpad.getFileAtPath(req.params.type + '/' + req.params.filename));
+      });
+
       // Edit a file
       server.post('/saasy/edit', function (req, res) {
         save(); 
