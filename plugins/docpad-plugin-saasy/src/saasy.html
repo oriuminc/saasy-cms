@@ -1,7 +1,6 @@
-<div class='saasy'>
-    Saasy
+<div id='saasy' data-owner='saasy'>
     <div class='form-holder'></div>
-    <a href='javascript:$S.create(contentTypes[0])'>Create</a>
-    <a href='javascript:$S.edit(contentTypes[0], "articles/helloworld")'>Edit</a>
-    <a href='javascript:$S.delete()'>Delete</a>
+    <a href='javascript:$S.API.create($S.contentTypes[0])'>Create</a>
+    <a href='javascript:$S.API.edit($S.contentTypes[0], "articles/helloworld")'>Edit</a>
+    <a href='javascript:$S.API.delete()'>Delete</a>
 </div>

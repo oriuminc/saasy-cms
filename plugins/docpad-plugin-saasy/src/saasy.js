@@ -1,15 +1,13 @@
-/*globals window, alert, console*/
+/*globals $S, window, alert, console*/
 /*jslint plusplus: true*/
-var $S = {};
 
-$S = (function ($, types, undefined) {
+$S.API = (function ($, types) {
     'use strict';
-     
     if (typeof $ === 'undefined') {
-        throw "You can't use Saasy without jQuery";
+        throw 'You can\'t use Saasy without jQuery';
     }
-    
-    var $formSlot = $('.saasy .form-holder');
+
+    var $formSlot = $('#saasy .form-holder');
 
     function buildForm(type, fileName) {
         var key,
@@ -18,28 +16,40 @@ $S = (function ($, types, undefined) {
             myId,
             html = '';
         function buildInput(type, id) {
-            return '<input id="' + id + '" type="' + type + '">';
+            switch (type) {
+            case 'textarea':
+                return '<textarea id="' + id + '"></textarea>';
+            case 'image':
+                return '<input id="' + id + '" type="file">';
+            default:
+                return '<input id="' + id + '" type="' + type + '">';
+            }
         }
+
         function loadData() {
             $.ajax({
                 url: '/saasy/document/' + fileName
-            }).done(function (obj) {
+            }).done(function (result) {
                 var key;
-                obj.meta.Content = obj.content;
-                for (key in obj.meta) {
-                    if (obj.meta.hasOwnProperty(key)) {
-                        $('#Saasy-' + key).attr('value', obj.meta[key]);
+                result.meta.Content = result.content;
+                for (key in result.meta) {
+                    if (result.meta.hasOwnProperty(key)) {
+                        $('#saasy-form-' + key).attr('value', result.meta[key]);
                     }
                 }
             });
         }
 
-        type.fields.splice(0, 0, {Content: 'textarea'});
+        //Add Content implicitely to all datatypes
+        if (type.fields.length && Object.keys(type.fields[0])[0] !== ('Content')) {
+            type.fields.splice(0, 0, {Content: 'textarea'});
+        }
+
         for (key in type.fields) {
             if (type.fields.hasOwnProperty(key)) {
                 obj = type.fields[key];
                 innerKey = Object.keys(obj)[0];
-                myId = 'Saasy-' + innerKey;
+                myId = 'saasy-form-' + innerKey;
                 html += '<label for="' + myId + '">' + innerKey + '</label>' + buildInput(type.fields[key][innerKey], myId);
             }
         }
@@ -47,6 +57,7 @@ $S = (function ($, types, undefined) {
         if (fileName) {
             loadData();
         }
+        
         return html;
     }
 
@@ -65,12 +76,3 @@ $S = (function ($, types, undefined) {
         }
     };
 }(window.$, window.contentTypes || {}));
-
-
-/*
-$S.save('blog', {title: 'my title', content: 'my content'}, function (err) {
-    if(err) {
-        return alert("YOU SUCK");
-    }
-    ..
-});*/

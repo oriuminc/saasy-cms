@@ -1,3 +1,20 @@
-.saasy {
-    border:1px solid red;
+#saasy {
+    height:100%;
+    width:205px;
+    background:#efefef;
+    position:fixed;
+    left:0;
+    top:0;
+    padding:10px;
+}
+#saasy .form-holder > *  {
+    display:block;
+}
+#saasy a {
+    display:inline-block;
+    margin-top:20px;
+}
+body {
+    position:absolute;
+    left:225px;
 }
