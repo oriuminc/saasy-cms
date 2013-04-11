@@ -16,7 +16,7 @@ var __hasProp = {}.hasOwnProperty,
 // Pure JS module for DOCPAD
 module.exports = function(BasePlugin) {
   var Saasy,
-      saasyFileContents,
+      saasyInjection,
       fs = require('fs'),
       docpad,
       config;
@@ -28,65 +28,75 @@ module.exports = function(BasePlugin) {
     function Saasy() {
       return Saasy.__super__.constructor.apply(this, arguments);
     }
-
-    function getContentTypes() {
-        var configPath = config.rootPath + '/saasy.config.json';
-        if (fs.existsSync(config.rootPath)) {
-            return JSON.parse(fs.readFileSync(configPath));
-        } else {
-            console.log("You have no content types defined in saasy.config.json");
-        }
-    }
-
     // Name our plugin
     Saasy.prototype.name = 'saasy';
+
+    function getContentTypes(cb) {
+        var configPath = config.rootPath + '/saasy.config.json';
+        fs.readFile(configPath, function(err, data) {
+          if (err) {
+            console.log('Error reading your content types from ' + configPath);
+            return cb({});
+          }
+          cb(JSON.parse(data));
+        });
+    }
 
     // Access our docpad configuration from within our plugin
     Saasy.prototype.docpadReady = function(opts) {
       docpad = opts.docpad;
-      console.log('');
       config = opts.docpad.config;
-      config.contentTypes = getContentTypes();
-    }
+      getContentTypes(function (result) {
+        config.contentTypes = result;
+      });
+    };
 
     // Inject our CMS front end to the server 'out' files
     Saasy.prototype.renderDocument = function(opts, next) {
-      var extension = opts.extension, 
-          file = opts.file;
+      var file = opts.file;
 
       function injectJs() {
-         opts.content += saasyFileContents;//opts.content.replace('</body>',  saasyFileContents + '</body>');
-         next(); // Move on to the next file 
+         console.log('inject');
+         opts.content = opts.content.replace('</body>',  saasyInjection + '</body>');
+         next();
       }
       
-      // Only inject our CMS javascript into Layouts
-      if (file.type === 'document' && file.attributes.isLayout) {
-       // If we've previously read our saasy cms file then just inject the contents right away
-        if (saasyFileContents) {
+      // Only inject Saasy into Layouts with a closing body tag
+      if (file.type === 'document' && file.attributes.isLayout && opts.content.indexOf('</body>') > -1) {
+        // If we've previously read our saasy cms files, then just inject the contents right away
+        if (saasyInjection) {
           return injectJs();
         }
+
         // Read the contents of our Saasy CMS javascript file
-        fs.readFile(__dirname + '/saasy.js', function (err, data) {
-        
+        return fs.readFile(__dirname + '/saasy.js', function (err, data) {
           if (err) {
             next();
             return console.log(err);
           }
-          
-          var cssData = fs.readFileSync(__dirname + '/saasy.css'),
-              markup = fs.readFileSync(__dirname + '/saasy.html');
-          // Build our JS file contents and inject them into the page markup
-          saasyFileContents = '<style data-owner="saasy" type="text/css">' + cssData + '</style>' + markup + '<script data-owner="saasy">var contentTypes=' + JSON.stringify(config.contentTypes) + ';\n' + data + '</script>';
-          return injectJs();
+          fs.readFile(__dirname + '/saasy.css', function (err, cssData) {
+            if (err) {
+              next();
+              return console.log(err);
+            }
+            fs.readFile(__dirname + '/saasy.html', function (err, markupData) {
+              if (err) {
+                next();
+                return console.log(err);
+              }
+              // Build our JS file contents and inject them into the page markup
+              saasyInjection = '<style data-owner="saasy" type="text/css">' + cssData + '</style>' + markupData + '<script data-owner="saasy">var $S = { contentTypes:' + JSON.stringify(config.contentTypes) + '};\n' + data + '</script>';
+              injectJs();
+            });
+          });
         });
-      } else {
-        next();
       }
+      next();
     };
 
 
     // Add REST like calls for file CRUD operations on the express server
-    Saasy.prototype.serverExtend = function(opts){
+    Saasy.prototype.serverExtend = function(opts) {
 
       var server = opts.server,
           success = '{"success": true}',
@@ -101,75 +111,101 @@ module.exports = function(BasePlugin) {
             toReturn += key + ': "' + req.body[key] + '"\n';
           }
         }
+
         return toReturn += '---\n\n' + req.body.content;
       }
 
       // Write the contents of a file to DOCPATH documents folder
-      function fileWriter(str, req) {
-        var format;
-        if (req.body.type && req.body.url) {
-          if (!fs.existsSync(config.documentsPaths + '/' + req.body.type)) {
-            fs.mkdirSync(config.documentsPaths + '/' + req.body.type);
-          }
-          format = req.body.format || 'html';
-
-          fs.writeFileSync(config.documentsPaths + '/' + req.body.type + '/' + req.body.url + '.' + format +'.md', str);
-          return true;
+      function fileWriter(str, req, cbSuccess, cbFail) {
+        
+        function write () {
+          var filePath = config.documentsPaths + '/' + req.body.type + '/' + req.body.url + '.' + (req.body.format || 'html') +'.md';  
+          fs.writeFile(filePath, str, function (err) {
+            if(err) {
+              cbFail();
+              return console.log('couldnt write file at ' + filePath); 
+            }
+            cbSuccess();
+          });
         }
-        return false;
+
+        if (req.body.type && req.body.url) {
+          var dirPath = config.documentsPaths + '/' + req.body.type;
+          return fs.exists(dirPath, function (exists) {
+            if (!exists) {
+              return fs.mkdir(dirPath, function (err) {
+                  if(err) {
+                     cbFail();
+                     return console.log('couldnt make directory at ' + dirPath); 
+                  }
+                  write();
+              });
+            }
+            write();
+          }); 
+        }
+        cbFail();
       }
 
       // Deletes a document in the DOCPATH documents folder
-      function fileDeleter(req) {
+      function fileDeleter(req, cbSuccess, cbFail) {
         var filePath = config.documentsPaths + '/' + req.body.type + '/' + req.body.url + '.html.md';
         if (req.body.type && req.body.url) {
-          if(fs.existsSync(filePath)) {
-            fs.unlinkSync(filePath);
-            console.log('File at ' + filePath + ' deleted');
-            return true;
-          }
+          return fs.exists(filePath, function (exists) {
+            if (!exists) {
+              cbFail();
+              return console.log('couldnt delete file at ' + filePath + ' as it does not exist'); 
+            }
+            fs.unlink(filePath, function (err) {
+              if (err) {
+                cbFail();
+                return console.log(err);
+              }
+              console.log('File at ' + filePath + ' deleted');
+              cbSuccess();
+            }); 
+          });
         }
-        return false;
+        cbFail();
       }
 
       // Renames an existing file in the DOCPATH documents folder
-      function fileRenamer(req) {
+      function fileRenamer(req, cbSucess, cbFail) {
         var oldPath = config.documentsPaths + '/' + req.body.type + '/' + req.body.url + '.html.md';
-        var newPath = config.documentsPaths + '/' + req.body.type + '/' + req.body.urlNew + '.html.md';
         if (req.body.type && req.body.url && req.body.urlNew) {
-          if(fs.existsSync(oldPath)) {
-            fs.renameSync(oldPath, newPath)
-            return true;
-          }
+          return fs.exists(oldPath, function (exists) {
+           if (!exists) {
+             console.log('cannot rename ' + oldPath + ' as it does not exist');
+             return cbFail();
+           }
+           
+           var newPath = config.documentsPaths + '/' + req.body.type + '/' + req.body.urlNew + '.html.md';
+           fs.rename(oldPath, newPath, function(err) {
+             if (err) {
+                console.log(err);
+                return cbFail();
+             }
+             cbSuccess();
+           });
+          });
         }
-        return false;
+        cbFail();
       }
+
+
 
       // Express REST like CRUD operations
-
-      // Save a file
       function save() {
-         if(fileWriter(fileBuilder(req), req)) {
-          return res.send(success);
-        }
-        return res.send(fail);
-      
+        fileWriter(fileBuilder(req), req, function() {
+          res.send(success);
+        }, function () {
+           res.send(fail);
+        }); 
       }
 
+      // Save a file
       server.post('/saasy', function (req, res) {
         save();
-      });
-
-      // Delete a file
-      server.delete('/saasy', function (req, res) {
-        if(fileDeleter(req)) {
-          return res.send(success);
-        }
-        return res.send(fail);
-      });
-     
-      server.get('/saasy/document/:type/:filename', function(req, res) {
-        res.send(docpad.getFileAtPath(req.params.type + '/' + req.params.filename));
       });
 
       // Edit a file
@@ -177,18 +213,32 @@ module.exports = function(BasePlugin) {
         save(); 
       });
       
+      // Delete a file
+      server.delete('/saasy', function (req, res) {
+        fileDeleter(req, function () {
+          return res.send(success);
+        }, function () {
+          return res.send(fail);
+        });
+      });
+    
       // Rename a file
       server.post('/saasy/rename', function (req, res) {
-        if(fileRenamer(req)) {
+        fileRenamer(req, function () {
           return res.send(success);
-        }
-        return res.send(fail);
+        }, function () {
+          return res.send(fail);
+        });
+      });
+      
+      //Get a Document 
+      server.get('/saasy/document/:type/:filename', function(req, res) {
+        res.send(docpad.getFileAtPath(req.params.type + '/' + req.params.filename));
       });
 
     };
 
     return Saasy;
-
+  
   })(BasePlugin);
-
 };
