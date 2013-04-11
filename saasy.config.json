@@ -1,23 +1,32 @@
-[{
-    "name": "Blog Post",
-    "type": "blog",
-    "fields": [{ 
-        "Featured Image": "image"
-    }, {
-        "Authored Date": "date"   
-    }]
-
-}, {
-    "name": "Case Study",
-    "type": "casestudy",
-    "fields": [{
-        "Hero Image": "image"
-    },{ 
-        "Project URL": "url"
-    }, {
-        "Teaser Text": "textarea"   
+{
+    "global": {
+        "filename": "text",
+        "content": "textarea",
+        "In menu?": "checkbox",
+        "title": "text"
     }, 
-    {
-        "Pull Quote": "textarea"
+    "types": [{
+        "name": "Blog Post",
+        "type": "blog",
+        "layout": "blog",
+        "fields": [{ 
+            "Featured Image": "image"
+        }, {
+            "Authored Date": "date"   
+        }]
+    }, {
+        "name": "Case Study",
+        "type": "casestudy",
+        "layout": "casestudy",
+        "fields": [{
+            "Hero Image": "image"
+        },{ 
+            "Project URL": "url"
+        }, {
+            "Teaser Text": "textarea"   
+        }, 
+        {
+            "Pull Quote": "textarea"
+        }]
     }]
-}]
+}

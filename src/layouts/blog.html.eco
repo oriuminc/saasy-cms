@@ -1,0 +1,6 @@
+---
+layout: 'default'
+---
+
+<h1><%= @document.title %></h1>
+<div class="blog"><%- @content %></div>

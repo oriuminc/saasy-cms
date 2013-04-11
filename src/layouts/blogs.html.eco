@@ -1,0 +1,43 @@
+---
+title: 'Home'
+layout: 'default'
+tags: ['page']
+isPaged: true
+pageOrder: 0
+pagedCollection: 'documents'
+pageSize: 1
+---
+
+<% posts = @getCollection('documents') %>
+<% for i in [@document.page.startIdx...@document.page.endIdx]: %>
+    <% document = posts.at(i).toJSON() %>
+    <article id="post" class="post">
+        <h1><a href='<%=document.url%>'><%= document.title %></a></h1>
+        <div class="post-date"><%= document.date.toLocaleDateString() %></div>
+        <div class="post-content">
+            <%- document.contentRenderedWithoutLayouts %>
+        </div>
+    </article>
+<% end %>
+
+<div class="pagination">
+    <ul>
+        <% if !@getDocument().hasPrevPage(): %>
+            <li class="disabled"><span>Prev</span></li>
+        <% else: %>
+            <li><a href="<%= @getDocument().getPrevPage() %>">Prev</a></li>
+        <% end %>
+        <% for num in [0..@document.page.count-1]: %>
+            <% if @document.page.number == num+1: %>
+                <li class="active"><span><%= num + 1%></span></li>
+            <% else: %>
+                <li><a href="<%= @getDocument().getPagedUrl(num) %>"><%= num + 1 %></a></li>
+            <% end %>
+        <% end %>
+        <% if !@getDocument().hasNextPage(): %>
+            <li class="disabled">Next</li>
+        <% else: %>
+            <li><a href="<%= @getDocument().getNextPage() %>">Next</a></li>
+        <% end %>
+    </ul>
+</div>

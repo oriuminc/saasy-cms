@@ -47,7 +47,8 @@ module.exports = function(BasePlugin) {
       docpad = opts.docpad;
       config = opts.docpad.config;
       getContentTypes(function (result) {
-        config.contentTypes = result;
+        config.contentTypes = result.types;
+        config.globalFields = result.global;
       });
     };
 
@@ -56,7 +57,6 @@ module.exports = function(BasePlugin) {
       var file = opts.file;
 
       function injectJs() {
-         console.log('inject');
          opts.content = opts.content.replace('</body>',  saasyInjection + '</body>');
          next();
       }
@@ -85,7 +85,7 @@ module.exports = function(BasePlugin) {
                 return console.log(err);
               }
               // Build our JS file contents and inject them into the page markup
-              saasyInjection = '<style data-owner="saasy" type="text/css">' + cssData + '</style>' + markupData + '<script data-owner="saasy">var $S = { contentTypes:' + JSON.stringify(config.contentTypes) + '};\n' + data + '</script>';
+              saasyInjection = '<style data-owner="saasy" type="text/css">' + cssData + '</style>' + markupData + '<script data-owner="saasy">var $S = { contentTypes:' + JSON.stringify(config.contentTypes) + ', globalFields:' + JSON.stringify(config.globalFields) +'};\n' + data + '</script>';
               injectJs();
             });
           });
@@ -119,7 +119,7 @@ module.exports = function(BasePlugin) {
       function fileWriter(str, req, cbSuccess, cbFail) {
         
         function write () {
-          var filePath = config.documentsPaths + '/' + req.body.type + '/' + req.body.url + '.' + (req.body.format || 'html') +'.md';  
+          var filePath = config.documentsPaths + '/' + req.body.type + '/' + req.body.filename + '.' + (req.body.format || 'html') +'.md';  
           fs.writeFile(filePath, str, function (err) {
             if(err) {
               cbFail();
@@ -129,7 +129,7 @@ module.exports = function(BasePlugin) {
           });
         }
 
-        if (req.body.type && req.body.url) {
+        if (req.body.type && req.body.filename) {
           var dirPath = config.documentsPaths + '/' + req.body.type;
           return fs.exists(dirPath, function (exists) {
             if (!exists) {
@@ -138,7 +138,12 @@ module.exports = function(BasePlugin) {
                      cbFail();
                      return console.log('couldnt make directory at ' + dirPath); 
                   }
-                  write();
+                  docpad.action('generate', function(err,result){
+                    if (err) {
+                      console.log(err.stack);
+                    }
+                    write();
+                  });
               });
             }
             write();
@@ -192,8 +197,6 @@ module.exports = function(BasePlugin) {
         cbFail();
       }
 
-
-
       // Express REST like CRUD operations
       function save(req, res) {
         fileWriter(fileBuilder(req), req, function() {
@@ -238,8 +241,7 @@ module.exports = function(BasePlugin) {
         res.send(docpad.getFile({type: req.params.type, basename: req.params.filename}));
       } else if (req.params.type) {
         res.send(docpad.getFiles({type: req.params.type}));
-      }
-      else {
+      } else {
         res.send(docpad.getCollection('documents'));
       }  
     });
