@@ -233,15 +233,16 @@ module.exports = function(BasePlugin) {
       
       //Get a Document 
       server.get('/saasy/document/:type?/:filename?', function(req, res) {
-          if(req.params.type && req.params.filename) {
-              //res.send(docpad.getFileAtPath(req.params.type + '/' + req.params.filename));
-              res.send(docpad.getFile({type: req.params.type, basename: req.params.filename}));
-          } else if (req.params.type) {
-            res.send(docpad.getFiles({type: req.params.type}));
-          }
-
-          res.send(docpad.getCollection('documents'));
-      });
+      if(req.params.type && req.params.filename) {
+        //res.send(docpad.getFileAtPath(req.params.type + '/' + req.params.filename));
+        res.send(docpad.getFile({type: req.params.type, basename: req.params.filename}));
+      } else if (req.params.type) {
+        res.send(docpad.getFiles({type: req.params.type}));
+      }
+      else {
+        res.send(docpad.getCollection('documents'));
+      }  
+    });
 
     };
 
