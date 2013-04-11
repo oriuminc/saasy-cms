@@ -170,7 +170,7 @@ module.exports = function(BasePlugin) {
       }
 
       // Renames an existing file in the DOCPATH documents folder
-      function fileRenamer(req, cbSucess, cbFail) {
+      function fileRenamer(req, cbSuccess, cbFail) {
         var oldPath = config.documentsPaths + '/' + req.body.type + '/' + req.body.url + '.html.md';
         if (req.body.type && req.body.url && req.body.urlNew) {
           return fs.exists(oldPath, function (exists) {
@@ -195,7 +195,7 @@ module.exports = function(BasePlugin) {
 
 
       // Express REST like CRUD operations
-      function save() {
+      function save(req, res) {
         fileWriter(fileBuilder(req), req, function() {
           res.send(success);
         }, function () {
@@ -205,35 +205,42 @@ module.exports = function(BasePlugin) {
 
       // Save a file
       server.post('/saasy', function (req, res) {
-        save();
+        save(req, res);
       });
 
       // Edit a file
       server.post('/saasy/edit', function (req, res) {
-        save(); 
+        save(req, res); 
       });
       
       // Delete a file
       server.delete('/saasy', function (req, res) {
         fileDeleter(req, function () {
-          return res.send(success);
+          res.send(success);
         }, function () {
-          return res.send(fail);
+          res.send(fail);
         });
       });
     
       // Rename a file
       server.post('/saasy/rename', function (req, res) {
         fileRenamer(req, function () {
-          return res.send(success);
+          res.send(success);
         }, function () {
-          return res.send(fail);
+          res.send(fail);
         });
       });
       
       //Get a Document 
-      server.get('/saasy/document/:type/:filename', function(req, res) {
-        res.send(docpad.getFileAtPath(req.params.type + '/' + req.params.filename));
+      server.get('/saasy/document/:type?/:filename?', function(req, res) {
+          if(req.params.type && req.params.filename) {
+              //res.send(docpad.getFileAtPath(req.params.type + '/' + req.params.filename));
+              res.send(docpad.getFile({type: req.params.type, basename: req.params.filename}));
+          } else if (req.params.type) {
+            res.send(docpad.getFiles({type: req.params.type}));
+          }
+
+          res.send(docpad.getCollection('documents'));
       });
 
     };
