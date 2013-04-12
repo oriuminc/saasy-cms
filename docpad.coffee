@@ -2,7 +2,10 @@
 # It is simply a CoffeeScript Object which is parsed by CSON
 docpadConfig = {
 
-	# =================================
+    # Makes editing templates more likely to cause a regeneration
+	watchOptions: preferredMethods: ['watchFile','watch']
+
+    # =================================
 	# Template Data
 	# These are variables that will be accessible via our templates
 	# To access one of these within our templates, refer to the FAQ: https://github.com/bevry/docpad/wiki/FAQ
