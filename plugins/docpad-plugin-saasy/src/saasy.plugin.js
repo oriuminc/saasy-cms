@@ -17,6 +17,7 @@ var __hasProp = {}.hasOwnProperty,
 module.exports = function(BasePlugin) {
   var Saasy,
       saasyInjection,
+      gitpad = require('gitpad'),
       fs = require('fs'),
       docpad,
       config;
@@ -48,10 +49,17 @@ module.exports = function(BasePlugin) {
         });
     }
 
+    function initGitPad() {
+      //Initialize our Git Repo
+      gitpad.init(config.rootPath + '/src');
+      gitpad.showStatus();
+    }
+    
     // Access our docpad configuration from within our plugin - for now, this is all to deal with content types
     Saasy.prototype.docpadReady = function(opts) {
       docpad = opts.docpad;
       config = opts.docpad.config;
+      
       getContentTypes(function (result) {
         //get all content types and push special saasy gloabal fields to all types
         var key;
@@ -76,6 +84,8 @@ module.exports = function(BasePlugin) {
             docpad.setCollection(type, docpad.getCollection('documents').findAllLive({type:type},{date:-1}));
         }
       });
+
+      initGitPad();
     };
     /* we may be able to use this to prevent generations from clobbering other generations */
     Saasy.prototype.generateBefore = function (opts) {
@@ -245,6 +255,7 @@ module.exports = function(BasePlugin) {
       // Express REST like CRUD operations
       function save(req, res) {
         fileWriter(fileBuilder(req), req, function(fileName) {
+          gitpad.saveFile(config.documentsPaths + fileName + '.md', 'This is my commit message');          
           res.send(success(fileName));
         }, function () {
           res.send(fail);
