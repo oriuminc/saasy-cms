@@ -1,6 +1,7 @@
 .DS_STORE
 .*.swo
 .*.swp
+/out/*
 /node_modules/gitpad/*
 /src/documents/*
 /src/files/*
