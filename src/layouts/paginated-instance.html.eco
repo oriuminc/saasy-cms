@@ -1,0 +1,22 @@
+---
+layout: 'default'
+---
+
+<h1><%= @document.title %></h1>
+<article>
+    <%- @content %>
+</article>
+
+<aside>
+    <% data = @getCollection(@document.type).toJSON() %>
+    <% for document,documentIndex in data: %>
+        <% if @document.id is document.id: %>
+            <% if documentIndex >= 1: %>
+                <a href="<%= data[documentIndex-1].url %>">Previous</a>
+            <% end %>
+            <% if documentIndex < data.length - 1: %>
+                <a href="<%= data[documentIndex+1].url %>">Next</a>
+            <% end %>
+        <% end %>
+    <% end %>
+</aside>

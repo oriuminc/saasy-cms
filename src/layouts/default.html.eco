@@ -30,26 +30,74 @@
 	<!-- For iPhone with high-resolution Retina display: -->
 	<link rel="apple-touch-icon-precomposed" sizes="114x114" href="icons/apple-touch-icon-114x114-precomposed.png" />
 	<!-- For third-generation iPad with high-resolution Retina display: -->
-	<link rel="apple-touch-icon-precomposed" sizes="144x144" href="icons/apple-touch-icon-144x144-precomposed.png" />
+    <link rel="apple-touch-icon-precomposed" sizes="144x144" href="icons/apple-touch-icon-144x144-precomposed.png" />
+    <style type='text/css'>
+        header a {
+            padding-right:5px;
+        }
+        #breadcrumb span::after {
+            content: ' > ';
+        }
+        footer {
+            padding:5px 10px;
+            background:#444;
+            color:#fff;
+            text-shadow:0 0 1px (rgba(0,0,0,0.3);
+        }
+    </style>
 </head>
 <body>
     <!--[if lt IE 7]>
         <p class="chromeframe">You are using an outdated browser. <a href="http://browsehappy.com/">Upgrade your browser today</a> or <a href="http://www.google.com/chromeframe/?redirect=true">install Google Chrome Frame</a> to better experience this site.</p>
     <![endif]-->
 
-	<header>
-		<nav>
-			<% for page in @getCollection("html").findAll({"In menu?":'on'}).toJSON(): %>
-	      <a href="<%= page.url %>">
-	          <%= page.title %>
-	      </a>
-	    <% end %>
-		</nav>
+    <header>
+
+        <!-- Site Nav -->
+        <nav>
+            <% for page in @getCollection('html').findAll({'In menu?': 'on'}).toJSON(): %>
+                <% if page.url.indexOf('-page-') == -1: %>
+                    <a href="<%= page.url.replace('index.html', '') %>">
+	                    <%= page.title %>
+                    </a>
+                <% end %> 
+            <% end %>
+        </nav>
+
+        <!-- Breadcrumb nav --> 
+        <% crumbs = @document.url.split('/') %>
+        <% if crumbs[1] != 'index.html': %>
+            <nav id='breadcrumb'>
+                <% if crumbs[crumbs.length - 1] == 'index.html' || crumbs[crumbs.length - 1].indexOf('-page-') > -1: %>
+                    <% crumbs.splice(crumbs.length - 1, 1) %>
+                <% end %>
+                <span><a href='/'>Home</a></span>
+                <%if crumbs.length - 2: %>
+                    <% url = '/' + crumbs[1] + '/' %>
+                    <% for crumb in [1..crumbs.length - 2]: %>
+                        <% thisCrumb = @getCollection('html').findAll({relativeOutDirPath:crumbs[crumb], filename: 'index.html.md'}).toJSON() %>
+                        <span>
+                            <% if thisCrumb.length: %> 
+                                <a href='<%= url %>'><%= thisCrumb[0].title %></a>
+                            <% else: %>
+                                <%= crumbs[crumb] %>
+                            <% end %>
+                        </span>
+                        <% url += crumbs[crumb + 1]  + '/' %>
+                    <% end %> 
+                <% end %>
+                <%= @document.title %> 
+            </nav>
+        <% end %>
 	</header>
-	<article>
+    
+    <section>
 		<%- @content %>
-	</article>
-	<footer></footer>
+    </section>
+
+    <footer>
+        Sweetest footer evar
+    </footer>
 
 	<!-- jQuery -->
     <script src="//ajax.googleapis.com/ajax/libs/jquery/1.8.2/jquery.min.js"></script>

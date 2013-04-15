@@ -28,8 +28,14 @@ module.exports = function(BasePlugin) {
     function Saasy() {
       return Saasy.__super__.constructor.apply(this, arguments);
     }
+
     // Name our plugin
     Saasy.prototype.name = 'saasy';
+
+    //remove spaces from filenames and give them a max length
+    function fixFilePath(str) {
+        return str.trim().split(' ').join('-').substring(0, 40).toLowerCase();
+    }
 
     function getContentTypes(cb) {
         var configPath = config.rootPath + '/saasy.config.json';
@@ -42,14 +48,39 @@ module.exports = function(BasePlugin) {
         });
     }
 
-    // Access our docpad configuration from within our plugin
+    // Access our docpad configuration from within our plugin - for now, this is all to deal with content types
     Saasy.prototype.docpadReady = function(opts) {
       docpad = opts.docpad;
       config = opts.docpad.config;
       getContentTypes(function (result) {
+        //get all content types and push special saasy gloabal fields to all types
+        var key;
         config.contentTypes = result.types;
-        config.globalFields = result.global;
+        //special saasy global fields
+        config.globalFields = {
+            "Filename": "text",
+            "Content": "textarea"
+        };
+        //add saasy global fields and user specified global fields to all types
+        for(var key in result.global) {
+            if(result.global.hasOwnProperty(key)) {
+                config.globalFields[key] = result.global[key];
+            }    
+        }
+        
+        //create a live collection for each content type for use in paginated lists
+        var len = result.types.length,
+            type;
+        while(len--) {
+            type = result.types[len].type; 
+            docpad.setCollection(type, docpad.getCollection('documents').findAllLive({type:type},{date:-1}));
+        }
       });
+    };
+    /* we may be able to use this to prevent generations from clobbering other generations */
+    Saasy.prototype.generateBefore = function (opts) {
+        //opts.reset = true;
+        //console.log(arguments);
     };
 
     // Inject our CMS front end to the server 'out' files
@@ -68,7 +99,7 @@ module.exports = function(BasePlugin) {
           return injectJs();
         }
 
-        // Read the contents of our Saasy CMS javascript file
+        // Read the contents of our Saasy JS/CSS/HTML
         return fs.readFile(__dirname + '/saasy.js', function (err, data) {
           if (err) {
             next();
@@ -84,7 +115,7 @@ module.exports = function(BasePlugin) {
                 next();
                 return console.log(err);
               }
-              // Build our JS file contents and inject them into the page markup
+              // Build our file contents and inject them into the page markup
               saasyInjection = '<style data-owner="saasy" type="text/css">' + cssData + '</style>' + markupData + '<script data-owner="saasy">var $S = { contentTypes:' + JSON.stringify(config.contentTypes) + ', globalFields:' + JSON.stringify(config.globalFields) +'};\n' + data + '</script>';
               injectJs();
             });
@@ -99,38 +130,52 @@ module.exports = function(BasePlugin) {
     Saasy.prototype.serverExtend = function(opts) {
 
       var server = opts.server,
-          success = '{"success": true}',
+          successStr = '{"success": true, "fileName": "[name]"}',
           fail =  '{"success": false}';
 
+      function success(fileName) {
+        return successStr.replace("[name]", fileName);
+      }
       // Build the contents of a file to be saved as a string
       function fileBuilder(req) {
         var key,
+            loremIpsum = 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Quisque aliquam est convallis nibh vestibulum lacinia. Vestibulum dolor arcu, vulputate ut molestie sit amet, laoreet vitae mi. Suspendisse venenatis, quam at lacinia luctus, libero turpis molestie arcu, sed feugiat leo risus ac quam. Donec vel neque id tortor lacinia viverra. Pellentesque mollis justo purus. Cras quis tortor sed nibh fringilla gravida vitae eu diam. Ut erat elit, volutpat sed eleifend non, hendrerit vel tortor. Etiam facilisis sollicitudin venenatis. Morbi convallis tincidunt ligula, id tempor metus eleifend eu. Integer a risus ipsum, eu congue magna.'
             toReturn = '---\n';
+
+        //maybe we shouldn't do this - title is not a saasy concept - but title is lowercase in the metadata
+        //of all standard docpad modules/code
+        if(req.body.Title && ! req.body.title) {
+            req.body.title = req.body.Title;
+            delete req.body.Title;
+        }
+
         for (key in req.body) {
-          if (req.body.hasOwnProperty(key) && key !== 'content') {
+          if (req.body.hasOwnProperty(key) && key !== 'Content') {
             toReturn += key + ': "' + req.body[key] + '"\n';
           }
         }
 
-        return toReturn += '---\n\n' + req.body.content;
+        return toReturn += '---\n\n' + req.body.Content.replace('__loremIpsum', loremIpsum);
       }
 
       // Write the contents of a file to DOCPATH documents folder
       function fileWriter(str, req, cbSuccess, cbFail) {
-        
+        var fileName = fixFilePath(req.body.Filename)
+            type = fixFilePath(req.body.type);
+
         function write () {
-          var filePath = config.documentsPaths + '/' + req.body.type + '/' + req.body.filename + '.' + (req.body.format || 'html') +'.md';  
+          var filePath = config.documentsPaths + '/' + type + '/' + fileName + '.' + (req.body.format || 'html') + '.md';  
           fs.writeFile(filePath, str, function (err) {
             if(err) {
               cbFail();
               return console.log('couldnt write file at ' + filePath); 
             }
-            cbSuccess();
+            cbSuccess(filePath.replace(config.documentsPaths, '').replace('.md', ''));
           });
         }
 
-        if (req.body.type && req.body.filename) {
-          var dirPath = config.documentsPaths + '/' + req.body.type;
+        if (type && fileName) {
+          var dirPath = config.documentsPaths + '/' + type;
           return fs.exists(dirPath, function (exists) {
             if (!exists) {
               return fs.mkdir(dirPath, function (err) {
@@ -138,12 +183,12 @@ module.exports = function(BasePlugin) {
                      cbFail();
                      return console.log('couldnt make directory at ' + dirPath); 
                   }
-                  docpad.action('generate', function(err,result){
-                    if (err) {
-                      console.log(err.stack);
-                    }
+                  //docpad.action('generate', function(err,result){
+                    //if (err) {
+                      //console.log(err.stack);
+                    //}
                     write();
-                  });
+                  //});
               });
             }
             write();
@@ -154,7 +199,7 @@ module.exports = function(BasePlugin) {
 
       // Deletes a document in the DOCPATH documents folder
       function fileDeleter(req, cbSuccess, cbFail) {
-        var filePath = config.documentsPaths + '/' + req.body.type + '/' + req.body.url + '.html.md';
+        var filePath = config.documentsPaths + '/' + fixFilePath(req.body.type) + '/' + req.body.url + '.html.md';
         if (req.body.type && req.body.url) {
           return fs.exists(filePath, function (exists) {
             if (!exists) {
@@ -167,7 +212,7 @@ module.exports = function(BasePlugin) {
                 return console.log(err);
               }
               console.log('File at ' + filePath + ' deleted');
-              cbSuccess();
+              cbSuccess(filePath.replace(config.documentsPaths, '').replace('.md', ''));
             }); 
           });
         }
@@ -176,7 +221,7 @@ module.exports = function(BasePlugin) {
 
       // Renames an existing file in the DOCPATH documents folder
       function fileRenamer(req, cbSuccess, cbFail) {
-        var oldPath = config.documentsPaths + '/' + req.body.type + '/' + req.body.url + '.html.md';
+        var oldPath = config.documentsPaths + '/' + fixFilePath(req.body.type) + '/' + req.body.url + '.html.md';
         if (req.body.type && req.body.url && req.body.urlNew) {
           return fs.exists(oldPath, function (exists) {
            if (!exists) {
@@ -184,13 +229,13 @@ module.exports = function(BasePlugin) {
              return cbFail();
            }
            
-           var newPath = config.documentsPaths + '/' + req.body.type + '/' + req.body.urlNew + '.html.md';
+           var newPath = config.documentsPaths + '/' + fixFilePath(req.body.type) + '/' + req.body.urlNew + '.html.md';
            fs.rename(oldPath, newPath, function(err) {
              if (err) {
                 console.log(err);
                 return cbFail();
              }
-             cbSuccess();
+             cbSuccess(newPath.replace(config.documentsPaths, '').replace('.md', ''));
            });
           });
         }
@@ -199,10 +244,10 @@ module.exports = function(BasePlugin) {
 
       // Express REST like CRUD operations
       function save(req, res) {
-        fileWriter(fileBuilder(req), req, function() {
-          res.send(success);
+        fileWriter(fileBuilder(req), req, function(fileName) {
+          res.send(success(fileName));
         }, function () {
-           res.send(fail);
+          res.send(fail);
         }); 
       }
 
@@ -218,8 +263,8 @@ module.exports = function(BasePlugin) {
       
       // Delete a file
       server.delete('/saasy', function (req, res) {
-        fileDeleter(req, function () {
-          res.send(success);
+        fileDeleter(req, function (fileName) {
+          res.send(success(fileName));
         }, function () {
           res.send(fail);
         });
@@ -227,17 +272,17 @@ module.exports = function(BasePlugin) {
     
       // Rename a file
       server.post('/saasy/rename', function (req, res) {
-        fileRenamer(req, function () {
-          res.send(success);
+        fileRenamer(req, function (fileName) {
+          res.send(success(fileName));
         }, function () {
           res.send(fail);
         });
       });
       
       //Get a Document 
-      server.get('/saasy/document/:type?/:filename?', function(req, res) {
+      //TODO: for performance reasons, we should redo this with the live collections that were created for pagination
+      server.get('/saasy/document/:type?/filename?', function(req, res) {
       if(req.params.type && req.params.filename) {
-        //res.send(docpad.getFileAtPath(req.params.type + '/' + req.params.filename));
         res.send(docpad.getFile({type: req.params.type, basename: req.params.filename}));
       } else if (req.params.type) {
         res.send(docpad.getFiles({type: req.params.type}));

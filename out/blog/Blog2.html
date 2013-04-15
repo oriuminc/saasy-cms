@@ -31,6 +31,20 @@
     <link rel="apple-touch-icon-precomposed" sizes="114x114" href="icons/apple-touch-icon-114x114-precomposed.png" />
     <!-- For third-generation iPad with high-resolution Retina display: -->
     <link rel="apple-touch-icon-precomposed" sizes="144x144" href="icons/apple-touch-icon-144x144-precomposed.png" />
+    <style type='text/css'>
+        header a {
+            padding-right:5px;
+        }
+        #breadcrumb span::after {
+            content: ' > ';
+        }
+        footer {
+            padding:5px 10px;
+            background:#444;
+            color:#fff;
+            text-shadow:0 0 1px (rgba(0,0,0,0.3);
+        }
+    </style>
 </head>
 <body>
     <!--[if lt IE 7]>
@@ -38,31 +52,201 @@
     <![endif]-->
 
     <header>
+
+        <!-- Site Nav -->
         <nav>
             
-          <a href="/blog/Blog2.html">
-              My Second blog post
-          </a>
-        
-          <a href="/blog/blog1.html">
-              My First Blog Post
-          </a>
-        
+                
+                    <a href="/blog/Blog2.html">
+                        My Second blog post
+                    </a>
+                 
+            
+                
+                    <a href="/blog/blog1.html">
+                        My First Blog Post
+                    </a>
+                 
+            
+                
+                    <a href="/blog/blog3.html">
+                        some title
+                    </a>
+                 
+            
+                
+                    <a href="/blog/fsadfasdf.html">
+                        safasf
+                    </a>
+                 
+            
+                
+                    <a href="/blog/newest-post.html">
+                        menu blog post
+                    </a>
+                 
+            
+                
+                    <a href="/casestudy/asfdasdfasfasdf.html">
+                        asdfasfasf
+                    </a>
+                 
+            
+                
+                    <a href="/casestudy/cool-study.html">
+                        Coolest Case Study
+                    </a>
+                 
+            
+                
+                    <a href="/casestudy/coolest-evar-study.html">
+                        coolest evar study
+                    </a>
+                 
+            
+                 
+            
+                 
+            
         </nav>
+
+        <!-- Breadcrumb nav --> 
+        
+        
+            <nav id='breadcrumb'>
+                
+                <span><a href='/'>Home</a></span>
+                
+                    
+                    
+                        
+                        <span>
+                             
+                                <a href='/blog/'>Blogs</a>
+                            
+                        </span>
+                        
+                     
+                
+                My Second blog post 
+            </nav>
+        
     </header>
-    <article>
+    
+    <section>
         <h1>My Second blog post</h1>
-<div class="blog"><p>Revenge of the blog!</p>
-</div>
-    </article>
-    <footer></footer>
+<article>
+    <p>Revenge of the blog!</p>
+
+</article>
+
+<aside>
+    
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+            
+                <a href="/blog/blog1.html">Previous</a>
+            
+            
+        
+    
+</aside>
+    </section>
+
+    <footer>
+        Sweetest footer evar
+    </footer>
 
     <!-- jQuery -->
     <script src="//ajax.googleapis.com/ajax/libs/jquery/1.8.2/jquery.min.js"></script>
     <script>window.jQuery || document.write('<script src="/vendor/jquery.js"><\/script>')</script>
 
     <!-- DocPad Scripts + Our Own -->
-    <script defer="defer"  src="/vendor/log.js"></script><script defer="defer"  src="/vendor/modernizr.js"></script><script defer="defer"  src="/scripts/script.js"></script>
+    <script >(function(){
+	// Did we just livereload?
+var log = true && localStorage && console && console.log && true;
+if ( log && localStorage.getItem('/docpad-livereload/reloaded') === 'yes' ) {
+	localStorage.removeItem('/docpad-livereload/reloaded');
+	console.log('LiveReloaded at', new Date())
+}
+
+// Listen for the regenerated event
+// and perform a reload of the page when the event occurs
+var listen = function(){
+	var socket = io.connect('/docpad-livereload');
+	socket.on('regenerated',function(){
+		if ( log ) {
+	localStorage.setItem('/docpad-livereload/reloaded', 'yes');
+}
+if($S.onGenerate) { $S.onGenerate(); } else { document.location.reload(); }
+	});
+};
+	if ( typeof io !== 'undefined' ) {
+		listen();
+	} else {
+		// Inject socket.io into our page then listen once loaded
+var inject = function(){
+	var t = document.createElement('script');
+	t.type = 'text/javascript';
+	t.async = true;
+	t.src = '/socket.io/socket.io.js';
+	t.onload = listen;
+	var s = document.getElementsByTagName('script')[0];
+	s.parentNode.insertBefore(t,s);
+};
+		inject();
+	}
+})();</script><script defer="defer"  src="/vendor/log.js"></script><script defer="defer"  src="/vendor/modernizr.js"></script><script defer="defer"  src="/scripts/script.js"></script>
 <style data-owner="saasy" type="text/css">#saasy {
     height:100%;
     width:205px;
@@ -79,133 +263,189 @@
     display:inline-block;
     margin-top:20px;
 }
+#saasy a:first-of-type {
+    margin-top:0;
+}
+#saasy .saasy-msg {
+    position:absolute;
+    right:0;
+    top:0;
+    font-size:11px;
+    background:red;
+    color:#fff;
+    padding:4px 8px;
+}
+#saasy form > label {
+    display:block;
+}
 body {
     position:absolute;
     left:225px;
 }
-</style><div id='saasy' data-owner='saasy'>
+</style><aside id='saasy' data-owner='saasy'>
+    <h1>SaasY CMS</h1>
+    <span class='saasy-msg'></span>
     <div class='menu-holder'></div>
     <form id='ct-form'></form>
-</div>
-<script data-owner="saasy">var $S = { contentTypes:[{"name":"Blog Post","type":"blog","layout":"blog","fields":[{"Featured Image":"image"},{"Authored Date":"date"}]},{"name":"Case Study","type":"casestudy","layout":"casestudy","fields":[{"Hero Image":"image"},{"Project URL":"url"},{"Teaser Text":"textarea"},{"Pull Quote":"textarea"}]}], globalFields:{"filename":"text","content":"textarea","In menu?":"checkbox","title":"text"}};
-/*globals $S, window, alert, console*/
+</aside>
+<script data-owner="saasy">var $S = { contentTypes:[{"name":"Blog Post","type":"blog","layout":"blog","fields":[{"Featured Image":"image"},{"Authored Date":"date"}]},{"name":"Case Study","type":"casestudy","layout":"casestudy","fields":[{"Hero Image":"image"},{"Project URL":"url"},{"Teaser Text":"textarea"},{"Pull Quote":"textarea"}]}], globalFields:{"Filename":"text","Content":"textarea","In menu?":"checkbox","Title":"text"}};
+/*globals $S, window, document, alert, console*/
 /*jslint plusplus: true*/
 
-$S.API = (function ($) {
+(function ($) {
     'use strict';
-    if (typeof $ === 'undefined') {
-        throw 'You can\'t use Saasy without jQuery';
+    var generationLocation,
+        $msgSlot = $('#saasy .saasy-msg');
+
+    function msg(str) {
+        if (str) {
+            $msgSlot.html(str).show();
+        } else {
+            $msgSlot.hide();
+        }
     }
 
-    var $menuSlot = $('#saasy .menu-holder');
-    var $formSlot = $('#saasy #ct-form');
-
-    function init () {
-        var key,
-            html = '';
-        for (key in $S.contentTypes) {
-            if ($S.contentTypes.hasOwnProperty(key)) {
-                html += '<a href=\'javascript:$S.API.createForm($S.contentTypes[' + key + '])\'>' + $S.contentTypes[key].name + '</a>';
-            }
-        }
-        $menuSlot.html(html);
-
-
-        $formSlot.on( "submit", function( event ) {
-          event.preventDefault();
-          $S.API.create($(this).serialize());
-        });
-
-    }
-
-    function buildForm(type, fileName) {
-        var key,
-            obj,
-            innerKey,
-            myId,
-            myName,
-            html = '';
-        function buildInput(type, id, name) {
-            switch (type) {
-            case 'textarea':
-                return '<textarea id="' + id + '" name="' + name + '"></textarea>';
-            case 'image':
-                return '<input id="' + id + '" name="' + name + '" type="file">';
-            default:
-                return '<input id="' + id + '" name="' + name + '" type="' + type + '">';
-            }
-        }
-
-        function loadData() {
-            $.ajax({
-                url: '/saasy/document/' + fileName
-            }).done(function (result) {
-                var key;
-
-                // TODO: Eventually this data needs to be read from a merge of the global fields
-                // and the content type fields as they are the canonical source. 
-                result.meta.content = result.content;
-                
-                for (key in result.meta) {
-                    if (result.meta.hasOwnProperty(key)) {
-                        $('#saasy-form-' + key).attr('value', result.meta[key]);
-                    }
-                }
-            });
-        }
-
-        for (key in $S.globalFields) {
-            if ($S.globalFields.hasOwnProperty(key)) {
-                obj = $S.globalFields[key];
-                myId = 'saasy-form-' + key;
-                html += '<label for="' + myId + '">' + key + '</label>' + buildInput($S.globalFields[key], myId, key);
-            }
-        }
-
-        for (key in type.fields) {
-            if (type.fields.hasOwnProperty(key)) {
-                obj = type.fields[key];
-                innerKey = Object.keys(obj)[0];
-                myId = 'saasy-form-' + innerKey;
-                html += '<label for="' + myId + '">' + innerKey + '</label>' + buildInput(type.fields[key][innerKey], myId, innerKey);
-            }
-        }
-
-        if (fileName) {
-            loadData();
-        }
-        html += '<label for="saasy-form-layout">Layout</label><input id="saasy-form-layout" type="text" name="layout" value="' + type.layout + '">';
-        html += '<input type="hidden" name="type" value="' + type.type + '">';
-        html += '<input type="submit" value="Submit">';
-        
-        return html;
-    }
-
-    init();
-
-    return {
-        createForm: function (type) {
-            $formSlot.html(buildForm(type));
-        },
-        editForm: function (type, fileName) {
-            $formSlot.html(buildForm(type, fileName));
-        },
-        create: function(data) {
-            $.ajax({
-                url: '/saasy/',
-                type: 'POST',
-                data: data
-            }).done(function (result) {
-                console.log(result);
-            });
-        },
-        delete: function () {
-        },
-        rename: function () {
-        },
-        curate: function () {
+    $S.onGenerate = function () {
+        if (generationLocation) {
+            document.location.href = generationLocation;
+        } else {
+            document.location.reload();
         }
     };
+
+    $S.API = (function () {
+        if (typeof $ === 'undefined') {
+            throw 'You can\'t use Saasy without jQuery, please add it to your pages (for now)...';
+        }
+
+        var $menuSlot = $('#saasy .menu-holder'),
+            $formSlot = $('#saasy #ct-form');
+
+        function init() {
+            var key,
+                html = '',
+                html2 = '';
+            for (key in $S.contentTypes) {
+                if ($S.contentTypes.hasOwnProperty(key)) {
+                    html += '<a href=\'javascript:$S.API.createForm($S.contentTypes[' + key + '])\'>Form ' + $S.contentTypes[key].name + '</a>';
+                    html2 += '<a href=\'javascript:$S.API.createInline($S.contentTypes[' + key + '])\'>Inline ' + $S.contentTypes[key].name + '</a>';
+                }
+            }
+        
+            $menuSlot.html(html + '<br>' + html2);
+
+            $formSlot.on('submit', function (event) {
+                event.preventDefault();
+                $S.API.create($(this).serialize());
+            });
+
+            msg();
+        }
+
+        function buildForm(type, fileName) {
+            var key,
+                obj,
+                innerKey,
+                myId,
+                myName,
+                html = '';
+
+            function buildInput(type, id, name) {
+                switch (type) {
+                case 'textarea':
+                    return '<textarea id="' + id + '" name="' + name + '"></textarea>';
+                case 'image':
+                    return '<input id="' + id + '" name="' + name + '" type="file">';
+                default:
+                    return '<input id="' + id + '" name="' + name + '" type="' + type + '">';
+                }
+            }
+
+            function loadData() {
+                $.ajax({
+                    url: '/saasy/document/' + fileName
+                }).done(function (result) {
+                    var key;
+                    for (key in result.meta) {
+                        if (result.meta.hasOwnProperty(key)) {
+                            $('#saasy-form-' + key).attr('value', result.meta[key]);
+                        }
+                    }
+                    //Content isn't stored in the meta
+                    result.meta.Content = result.Content;
+                });
+            }
+
+            for (key in $S.globalFields) {
+                if ($S.globalFields.hasOwnProperty(key)) {
+                    obj = $S.globalFields[key];
+                    myId = 'saasy-form-' + key;
+                    html += '<label for="' + myId + '">' + key + '</label>' + buildInput($S.globalFields[key], myId, key);
+                }
+            }
+
+            for (key in type.fields) {
+                if (type.fields.hasOwnProperty(key)) {
+                    obj = type.fields[key];
+                    innerKey = Object.keys(obj)[0];
+                    myId = 'saasy-form-' + innerKey;
+                    html += '<label for="' + myId + '">' + innerKey + '</label>' + buildInput(type.fields[key][innerKey], myId, innerKey);
+                }
+            }
+
+            //lets leave the layout as a hidden field for now (ie one layout per content type)
+            html += '<input type="hidden" name="layout" value="' + type.layout + '">';
+            html += '<input type="hidden" name="type" value="' + type.type + '">';
+            html += '<input type="submit" value="Submit">';
+            
+            if (fileName) {
+                loadData();
+            }
+            
+            return html;
+        }
+
+        init();
+
+        return {
+            createForm: function (type) {
+                $formSlot.html(buildForm(type));
+            },
+            editForm: function (type, fileName) {
+                $formSlot.html(buildForm(type, fileName));
+            },
+            create: function (data, done) {
+                msg('Creating Page...');
+                $.ajax({
+                    url: '/saasy/',
+                    type: 'POST',
+                    data: data
+                }).done(function (result) {
+                    window.setTimeout(function () {
+                        msg('Generating Static Site...');
+                    }, 800);
+                    if (done) {
+                        return done(result);
+                    }
+                });
+            },
+            createInline: function (type) {
+                var data = 'Filename=new ' + type.name.toLowerCase() + '&type=' + type.type + '&Content=__loremIpsum&title=New ' + type.name + '&layout=' + type.type;
+                this.create(data, function (result) {
+                    result = JSON.parse(result);
+                    if (result.fileName) {
+                        generationLocation = result.fileName;
+                    }
+                });
+            },
+            delete: function () {
+            },
+            rename: function () {
+            },
+            curate: function () {
+            }
+        };
+    }());
 }(window.$));
 </script></body>
 </html>

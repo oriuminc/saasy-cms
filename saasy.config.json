@@ -1,9 +1,7 @@
 {
     "global": {
-        "filename": "text",
-        "content": "textarea",
         "In menu?": "checkbox",
-        "title": "text"
+        "Title": "text"
     }, 
     "types": [{
         "name": "Blog Post",
