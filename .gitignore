@@ -1,3 +1,4 @@
 .DS_STORE
 .*.swo
 .*.swp
+/out/*
