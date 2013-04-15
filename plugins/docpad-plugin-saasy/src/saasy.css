@@ -14,6 +14,21 @@
     display:inline-block;
     margin-top:20px;
 }
+#saasy a:first-of-type {
+    margin-top:0;
+}
+#saasy .saasy-msg {
+    position:absolute;
+    right:0;
+    top:0;
+    font-size:11px;
+    background:red;
+    color:#fff;
+    padding:4px 8px;
+}
+#saasy form > label {
+    display:block;
+}
 body {
     position:absolute;
     left:225px;
