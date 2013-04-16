@@ -8,17 +8,15 @@ layout: 'default'
 </article>
 
 <aside>
-    <dl>
-        <dt>Related Articles</dt>
-        <% related = @document.relatedDocuments %> 
-        <% for document in related: %>
-           <dd><a href="<%= document.url %>"><%= document.title %></a></dd>
-        <% end %>
-        <% if ! related.length: %>
-            <dd>None</dd>
-        <% end %>
-    </dl>
-
+    <% related = @document.relatedDocuments %> 
+    <% if related && related.length: %>
+        <dl>
+            <dt>Related Articles</dt>
+            <% for document in related: %>
+                <dd><a href="<%= document.url %>"><%= document.title %></a></dd>
+            <% end %>
+        </dl>
+    <% end %>
     <% collection = @document.pagedCollection || @document.dataType || @document.type%>  
     <% data = @getCollection(collection).toJSON() %>
     <% for document,documentIndex in data: %>
