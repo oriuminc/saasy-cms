@@ -5,3 +5,4 @@
 /node_modules/gitpad/*
 /src/documents/*
 /src/files/*
+/src/.gitignore
