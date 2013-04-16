@@ -15,9 +15,10 @@ layout: 'default'
            <dd><a href="<%= document.url %>"><%= document.title %></a></dd>
         <% end %>
         <% if ! related.length: %>
-        <dd>None</dd>
+            <dd>None</dd>
         <% end %>
-    </dt>
+    </dl>
+
     <% collection = @document.pagedCollection || @document.dataType || @document.type%>  
     <% data = @getCollection(collection).toJSON() %>
     <% for document,documentIndex in data: %>
