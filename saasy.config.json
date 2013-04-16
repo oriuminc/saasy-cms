@@ -12,7 +12,12 @@
             "Featured Image": "image"
         }, {
             "Authored Date": "date"   
-        }]
+        }],
+        "categories": [
+            "Technology",
+            "Dudes",
+            "More Dudes"
+        ]
     }, {
         "name": "Case Study",
         "type": "casestudy",

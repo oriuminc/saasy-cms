@@ -62,7 +62,11 @@ module.exports = function(BasePlugin) {
       
       getContentTypes(function (result) {
         //get all content types and push special saasy gloabal fields to all types
-        var key;
+        var key,
+            len,
+            len2,
+            type,
+            cat;
         config.contentTypes = result.types;
         //special saasy global fields
         config.globalFields = {
@@ -70,18 +74,25 @@ module.exports = function(BasePlugin) {
             "Content": "textarea"
         };
         //add saasy global fields and user specified global fields to all types
-        for(var key in result.global) {
+        for(key in result.global) {
             if(result.global.hasOwnProperty(key)) {
                 config.globalFields[key] = result.global[key];
             }    
         }
-        
         //create a live collection for each content type for use in paginated lists
-        var len = result.types.length,
-            type;
+        len = result.types.length;
         while(len--) {
             type = result.types[len].type; 
-            docpad.setCollection(type, docpad.getCollection('documents').findAllLive({type:type},{date:-1}));
+            docpad.setCollection(type, docpad.getCollection('documents').findAllLive({type: type},{date:-1}));
+            len2 = result.types[len].categories;
+            if(len2) {
+                len2 = len2.length;
+                docpad.setCollection(type + '-categories', result.types[len].categories);
+                while(len2--) {
+                    cat = result.types[len].categories[len2];
+                    docpad.setCollection(type + ',' + cat, docpad.getCollection('documents').findAllLive({relativeOutDirPath:type,category: cat},{date:-1}));  
+                } 
+            }
         }
       });
 
