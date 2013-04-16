@@ -8,7 +8,18 @@ layout: 'default'
 </article>
 
 <aside>
-    <% data = @getCollection(@document.type).toJSON() %>
+    <dl>
+        <dt>Related Articles</dt>
+        <% related = @document.relatedDocuments %> 
+        <% for document in related: %>
+           <dd><a href="<%= document.url %>"><%= document.title %></a></dd>
+        <% end %>
+        <% if ! related.length: %>
+        <dd>None</dd>
+        <% end %>
+    </dt>
+    <% collection = @document.pagedCollection || @document.dataType || @document.type%>  
+    <% data = @getCollection(collection).toJSON() %>
     <% for document,documentIndex in data: %>
         <% if @document.id is document.id: %>
             <% if documentIndex >= 1: %>

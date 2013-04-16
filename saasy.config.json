@@ -1,7 +1,8 @@
 {
     "global": {
         "In menu?": "checkbox",
-        "Title": "text"
+        "Title": "text",
+        "tags": "textarea"
     }, 
     "types": [{
         "name": "Blog Post",

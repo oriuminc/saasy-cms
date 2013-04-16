@@ -255,7 +255,7 @@ module.exports = function(BasePlugin) {
       // Express REST like CRUD operations
       function save(req, res) {
         fileWriter(fileBuilder(req), req, function(fileName) {
-          gitpad.saveFile(config.documentsPaths + fileName + '.md', 'This is my commit message');          
+          gitpad.saveFile(config.documentsPaths + fileName + '.md', 'User initiated save of ' + fileName);          
           res.send(success(fileName));
         }, function () {
           res.send(fail);
