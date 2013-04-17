@@ -2,10 +2,6 @@
 # It is simply a CoffeeScript Object which is parsed by CSON
 docpadConfig = {
     watchOptions: preferredMethods: ['watchFile','watch']
-    collections: 
-        pages: ->
-            @getCollection("html").findAll({isPage:true}).on "add", (model) ->
-                model.setMetaDefaults({layout:"default"})
 
     # =================================
 	# Template Data

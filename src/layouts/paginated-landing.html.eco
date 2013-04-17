@@ -8,10 +8,10 @@ layout: 'default'
 
  <% for i in [@document.page.startIdx...@document.page.endIdx]: %>
       <% document = posts.at(i).toJSON() %>
-      <article id="post" class="post" style="border-bottom:1px solid #ccc">
+      <article>
           <h1><a href='<%=document.url%>'><%= document.title %></a></h1>
-          <div class="post-date"><%= document.date.toLocaleDateString() %></div>
-          <div class="post-content">
+          <div class="date"><%= document.date.toLocaleDateString() %></div>
+          <div class="content">
              <%- document.contentRenderedWithoutLayouts %>
           </div>
       </article>

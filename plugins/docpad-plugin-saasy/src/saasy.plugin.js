@@ -17,6 +17,7 @@ var __hasProp = {}.hasOwnProperty,
 module.exports = function(BasePlugin) {
   var Saasy,
       saasyInjection,
+      collections = {},
       gitpad = require('gitpad'),
       fs = require('fs'),
       docpad,
@@ -54,7 +55,7 @@ module.exports = function(BasePlugin) {
       gitpad.init(config.rootPath + '/src');
       gitpad.showStatus();
     }
-    
+
     // Access our docpad configuration from within our plugin - for now, this is all to deal with content types
     Saasy.prototype.docpadReady = function(opts) {
       docpad = opts.docpad;
@@ -65,6 +66,8 @@ module.exports = function(BasePlugin) {
         var key,
             len,
             len2,
+            data,
+            apiData,
             type,
             cat;
         config.contentTypes = result.types;
@@ -82,20 +85,26 @@ module.exports = function(BasePlugin) {
         //create a live collection for each content type for use in paginated lists
         len = result.types.length;
         while(len--) {
-            type = result.types[len].type; 
+            type = result.types[len].type;
             docpad.setCollection(type, docpad.getCollection('documents').findAllLive({type: type},{date:-1}));
             len2 = result.types[len].categories;
             if(len2) {
+                var myCollection = new docpad.Collection();
+                result.types[len].categories.forEach(function(cat) {
+                  myCollection.add({'cat': cat});
+                });
+                docpad.setCollection(type + '-categories', myCollection); 
                 len2 = len2.length;
-                docpad.setCollection(type + '-categories', result.types[len].categories);
                 while(len2--) {
                     cat = result.types[len].categories[len2];
-                    docpad.setCollection(type + ',' + cat, docpad.getCollection('documents').findAllLive({relativeOutDirPath:type,category: cat},{date:-1}));  
+                    docpad.setCollection(type + ',' + cat, docpad.getCollection('documents').findAllLive({type:type, category: {$in:[cat]}},{date:-1}));  
                 } 
             }
         }
       });
-
+      docpad.getCollection('html').on('add', function(model) {
+        model.setMetaDefaults({layout: 'default'});
+      });
       initGitPad();
     };
     /* we may be able to use this to prevent generations from clobbering other generations */
@@ -302,15 +311,22 @@ module.exports = function(BasePlugin) {
       });
       
       //Get a Document 
-      //TODO: for performance reasons, we should redo this with the live collections that were created for pagination
-      server.get('/saasy/document/:type?/filename?', function(req, res) {
-      if(req.params.type && req.params.filename) {
-        res.send(docpad.getFile({type: req.params.type, basename: req.params.filename}));
-      } else if (req.params.type) {
-        res.send(docpad.getFiles({type: req.params.type}));
-      } else {
-        res.send(docpad.getCollection('documents'));
-      }  
+      server.get('/saasy/document/:type?/:filename?', function(req, res) {
+        if(req.params.type && req.params.filename) {
+            res.send(docpad.getFile({type: req.params.type, basename: req.params.filename}));
+        } else if (req.params.type) {
+            var filter = {},
+                sort = {};
+            for(key in req.query) {
+                if(req.query.hasOwnProperty(key)) {
+                    filter[key] = {$in:req.query[key].split(',')};
+                }
+            }
+            sort[req.query.sort || 'date'] = req.query.sortOrder || -1;
+            res.send(docpad.getCollection(req.params.type).findAll(filter, sort));
+        } else {
+            res.send(docpad.getFiles({}));
+        }  
     });
 
     };

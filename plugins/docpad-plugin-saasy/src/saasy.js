@@ -24,7 +24,7 @@
 
     $S.API = (function () {
         if (typeof $ === 'undefined') {
-            throw 'You can\'t use Saasy without jQuery, please add it to your pages (for now)...';
+            throw 'You can\'t use Saasy without jQuery, please add it to your pages (for now, we\'ll deal with it later)...';
         }
 
         var $menuSlot = $('#saasy .menu-holder'),
@@ -34,6 +34,7 @@
             var key,
                 html = '',
                 html2 = '';
+
             for (key in $S.contentTypes) {
                 if ($S.contentTypes.hasOwnProperty(key)) {
                     html += '<a href=\'javascript:$S.API.createForm($S.contentTypes[' + key + '])\'>Form ' + $S.contentTypes[key].name + '</a>';
@@ -133,6 +134,12 @@
                     window.setTimeout(function () {
                         msg('Generating Static Site...');
                     }, 800);
+
+                    result = JSON.parse(result);
+                    if (result.fileName) {
+                        generationLocation = result.fileName;
+                    }
+
                     if (done) {
                         return done(result);
                     }
@@ -140,12 +147,7 @@
             },
             createInline: function (type) {
                 var data = 'Filename=new ' + type.name.toLowerCase() + '&type=' + type.type + '&Content=__loremIpsum&title=New ' + type.name + '&layout=' + type.type;
-                this.create(data, function (result) {
-                    result = JSON.parse(result);
-                    if (result.fileName) {
-                        generationLocation = result.fileName;
-                    }
-                });
+                this.create(data);
             },
             delete: function () {
             },
@@ -154,5 +156,6 @@
             curate: function () {
             }
         };
+    
     }());
 }(window.$));
