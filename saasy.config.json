@@ -1,10 +1,5 @@
 {
-    "global": {
-        "In menu?": "checkbox",
-        "Title": "text",
-        "tags": "textarea"
-    }, 
-    "types": [{
+   "types": [{
         "name": "Blog Post",
         "type": "blog",
         "layout": "blog",
@@ -14,7 +9,8 @@
             "Authored Date": "date"   
         }],
         "categories": [
-            "Tech"
+            "Tech",
+            "Design"
         ]
     }, {
         "name": "Case Study",
@@ -30,5 +26,11 @@
         {
             "Pull Quote": "textarea"
         }]
-    }]
+    }], 
+    "globalTypes": {
+        "In menu?": "checkbox",
+        "Title": "text",
+        "tags": "textarea"
+    } 
+    
 }

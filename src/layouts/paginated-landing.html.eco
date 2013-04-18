@@ -1,9 +1,18 @@
 ---
 layout: 'default'
 ---
-<h1><%- @content %></h1>
+<% content = @content || @document.title %>
+<% if ! content: %>
+  <% parent = @getCollection('html').findAll({pagedCollection:@document.parentType}).toJSON() %>
+  <% if parent.length: %>
+    <% content = parent[0].title + ' | ' + @document.category %>
+    <% @document.title = content %>
+  <% end %>
+<% end %>
 
-<% collection = @document.pagedCollection || @document.dataType || @document.type%>
+<h1><%- content %></h1>
+
+<% collection = @document.pagedCollection %>
 <% posts = @getCollection(collection) %>
 
  <% for i in [@document.page.startIdx...@document.page.endIdx]: %>

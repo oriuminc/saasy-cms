@@ -39,6 +39,28 @@ module.exports = function(BasePlugin) {
         return str.trim().split(' ').join('-').substring(0, 40).toLowerCase();
     }
 
+  // Build the contents of a file to be saved as a string
+   function fileBuilder(req) {
+    var key,
+        loremIpsum = 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Quisque aliquam est convallis nibh vestibulum lacinia. Vestibulum dolor arcu, vulputate ut molestie sit amet, laoreet vitae mi. Suspendisse venenatis, quam at lacinia luctus, libero turpis molestie arcu, sed feugiat leo risus ac quam. Donec vel neque id tortor lacinia viverra. Pellentesque mollis justo purus. Cras quis tortor sed nibh fringilla gravida vitae eu diam. Ut erat elit, volutpat sed eleifend non, hendrerit vel tortor. Etiam facilisis sollicitudin venenatis. Morbi convallis tincidunt ligula, id tempor metus eleifend eu. Integer a risus ipsum, eu congue magna.'
+        toReturn = '---\n';
+
+    //maybe we shouldn't do this - title is not a saasy concept - but title is lowercase in the metadata
+    //of all standard docpad modules/code
+    if(req.body.Title && ! req.body.title) {
+        req.body.title = req.body.Title;
+        delete req.body.Title;
+    }
+
+    for (key in req.body) {
+      if (req.body.hasOwnProperty(key) && key !== 'Content') {
+        toReturn += key + ': "' + req.body[key] + '"\n';
+      }
+    }
+
+        return toReturn += '---\n\n' + (req.body.Content ? req.body.Content.replace('__loremIpsum', loremIpsum) : '');
+      }
+
     function getContentTypes(cb) {
         var configPath = config.rootPath + '/saasy.config.json';
         fs.readFile(configPath, function(err, data) {
@@ -69,6 +91,8 @@ module.exports = function(BasePlugin) {
             data,
             apiData,
             type,
+            fileName,
+            catCollection,
             cat;
         config.contentTypes = result.types;
         //special saasy global fields
@@ -77,9 +101,9 @@ module.exports = function(BasePlugin) {
             "Content": "textarea"
         };
         //add saasy global fields and user specified global fields to all types
-        for(key in result.global) {
-            if(result.global.hasOwnProperty(key)) {
-                config.globalFields[key] = result.global[key];
+        for(key in result.globalTypes) {
+            if(result.globalTypes.hasOwnProperty(key)) {
+                config.globalFields[key] = result.globalTypes[key];
             }    
         }
         //create a live collection for each content type for use in paginated lists
@@ -89,24 +113,38 @@ module.exports = function(BasePlugin) {
             docpad.setCollection(type, docpad.getCollection('documents').findAllLive({type: type},{date:-1}));
             len2 = result.types[len].categories;
             if(len2) {
-                var myCollection = new docpad.Collection();
+                catCollection = new docpad.Collection();
                 result.types[len].categories.forEach(function(cat) {
-                  myCollection.add({'cat': cat});
+                  catCollection.add({cat: cat});
                 });
-                docpad.setCollection(type + '-categories', myCollection); 
+                docpad.setCollection(type + '-categories', catCollection); 
                 len2 = len2.length;
                 while(len2--) {
                     cat = result.types[len].categories[len2];
-                    docpad.setCollection(type + ',' + cat, docpad.getCollection('documents').findAllLive({type:type, category: {$in:[cat]}},{date:-1}));  
+                    docpad.setCollection(type + ',' + cat, docpad.getCollection('documents').findAllLive({type:type, category: {$in:[cat]}},{date:-1})); 
+                    fileName = config.documentsPaths + '/' + type + '/category-' + cat + '.html.md';
+
+                    //we need to block here as docpad doesn't wait for a callback after letting you know it's ready, super sweet!
+                    console.log('Blocking Docpad while creating categories...');
+                    if(! fs.existsSync(fileName)) {
+                       fs.writeFileSync(fileName, fileBuilder({ body: {  
+                        category: cat,
+                        parentType: type,
+                        pagedCollection: type + ',' + cat,
+                        layout: 'paginated-landing',
+                        isPaged: true,
+                        pageSize: 1
+                       }}));
+                    }
                 } 
             }
         }
       });
-      docpad.getCollection('html').on('add', function(model) {
-        model.setMetaDefaults({layout: 'default'});
-      });
+
+      //setup our git repository
       initGitPad();
     };
+
     /* we may be able to use this to prevent generations from clobbering other generations */
     Saasy.prototype.generateBefore = function (opts) {
         //opts.reset = true;
@@ -165,27 +203,6 @@ module.exports = function(BasePlugin) {
 
       function success(fileName) {
         return successStr.replace("[name]", fileName);
-      }
-      // Build the contents of a file to be saved as a string
-      function fileBuilder(req) {
-        var key,
-            loremIpsum = 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Quisque aliquam est convallis nibh vestibulum lacinia. Vestibulum dolor arcu, vulputate ut molestie sit amet, laoreet vitae mi. Suspendisse venenatis, quam at lacinia luctus, libero turpis molestie arcu, sed feugiat leo risus ac quam. Donec vel neque id tortor lacinia viverra. Pellentesque mollis justo purus. Cras quis tortor sed nibh fringilla gravida vitae eu diam. Ut erat elit, volutpat sed eleifend non, hendrerit vel tortor. Etiam facilisis sollicitudin venenatis. Morbi convallis tincidunt ligula, id tempor metus eleifend eu. Integer a risus ipsum, eu congue magna.'
-            toReturn = '---\n';
-
-        //maybe we shouldn't do this - title is not a saasy concept - but title is lowercase in the metadata
-        //of all standard docpad modules/code
-        if(req.body.Title && ! req.body.title) {
-            req.body.title = req.body.Title;
-            delete req.body.Title;
-        }
-
-        for (key in req.body) {
-          if (req.body.hasOwnProperty(key) && key !== 'Content') {
-            toReturn += key + ': "' + req.body[key] + '"\n';
-          }
-        }
-
-        return toReturn += '---\n\n' + req.body.Content.replace('__loremIpsum', loremIpsum);
       }
 
       // Write the contents of a file to DOCPATH documents folder

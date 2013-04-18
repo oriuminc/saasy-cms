@@ -68,14 +68,14 @@
         <% crumbs = @document.url.split('/') %>
         <% if crumbs[1] != 'index.html': %>
             <nav id='breadcrumb'>
-                <% if crumbs[crumbs.length - 1] == 'index.html' || crumbs[crumbs.length - 1].indexOf('-page-') > -1: %>
+                <% if crumbs[crumbs.length - 1] == 'index.html' || crumbs[crumbs.length - 1].indexOf('index-page-') > -1: %>
                     <% crumbs.splice(crumbs.length - 1, 1) %>
                 <% end %>
                 <span><a href='/'>Home</a></span>
                 <%if crumbs.length - 2: %>
                     <% url = '/' + crumbs[1] + '/' %>
                     <% for crumb in [1..crumbs.length - 2]: %>
-                        <% thisCrumb = @getCollection('html').findAll({relativeOutDirPath:crumbs[crumb], filename: 'index.html.md'}).toJSON() %>
+                        <% thisCrumb = @getCollection('html').findAll({pagedCollection:crumbs[crumb]}).toJSON() %>
                         <span>
                             <% if thisCrumb.length: %> 
                                 <a href='<%= url %>'><%= thisCrumb[0].title %></a>
@@ -86,7 +86,7 @@
                         <% url += crumbs[crumb + 1]  + '/' %>
                     <% end %> 
                 <% end %>
-                <%= @document.title %> 
+                <%= @document.category || @document.title %> 
             </nav>
         <% end %>
 	</header>
