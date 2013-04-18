@@ -156,12 +156,12 @@ module.exports = function(BasePlugin) {
       var file = opts.file;
 
       function injectJs() {
-         opts.content = opts.content.replace('</body>',  saasyInjection + '</body>');
+         opts.content = opts.content.replace('<body>',  '<body>' + saasyInjection);
          next();
       }
       
-      // Only inject Saasy into Layouts with a closing body tag
-      if (file.type === 'document' && file.attributes.isLayout && opts.content.indexOf('</body>') > -1) {
+      // Only inject Saasy into Layouts with a opening body tag
+      if (file.type === 'document' && file.attributes.isLayout && opts.content.indexOf('<body>') > -1) {
         // If we've previously read our saasy cms files, then just inject the contents right away
         if (saasyInjection) {
           return injectJs();

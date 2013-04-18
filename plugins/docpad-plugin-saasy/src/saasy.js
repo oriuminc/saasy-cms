@@ -1,7 +1,7 @@
-/*globals $S, window, document, alert, console*/
+/*globals $, $S, window, document, alert, console*/
 /*jslint plusplus: true*/
 
-(function ($) {
+document.addEventListener('DOMContentLoaded', function () {
     'use strict';
     var generationLocation,
         $msgSlot = $('#saasy .saasy-msg');
@@ -158,4 +158,4 @@
         };
     
     }());
-}(window.$));
+});
