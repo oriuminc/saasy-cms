@@ -52,7 +52,6 @@
     <![endif]-->
 
     <header>
-
         <!-- Site Nav -->
         <nav>
             <% for page in @getCollection('html').findAll({'In menu?': 'on'}).toJSON(): %>
@@ -86,7 +85,11 @@
                         <% url += crumbs[crumb + 1]  + '/' %>
                     <% end %> 
                 <% end %>
-                <%= @document.category || @document.title %> 
+                <% thisCrumb = @document.title %>
+                <% if @document.parentType: %>
+                    <% thisCrumb = @document.category %> 
+                <% end %>
+                <%= thisCrumb %>
             </nav>
         <% end %>
 	</header>
