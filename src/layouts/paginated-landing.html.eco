@@ -27,24 +27,22 @@ layout: 'default'
 <% end %>
 
 
-<div class="pagination">
-    <ul>
-        <% if !@getDocument().hasPrevPage(): %>
-            <li class="disabled"><span>Previous</span></li>
+<nav class="pagination">
+    <% if !@getDocument().hasPrevPage(): %>
+        <span class="disabled"><span>Previous</span>
+    <% else: %>
+        <span><a href="<%= @getDocument().getPrevPage() %>">Previous</a></span>
+    <% end %>
+    <% for num in [0..@document.page.count-1]: %>
+        <% if @document.page.number == num: %>
+            <span class='active'><%= num + 1 %></span>
         <% else: %>
-            <li><a href="<%= @getDocument().getPrevPage() %>">Previous</a></li>
+            <span><a href="<%= @getDocument().getPagedUrl(num) %>"><%= num + 1%></a></span>
         <% end %>
-        <% for num in [0..@document.page.count-1]: %>
-            <% if @document.page.number == num: %>
-                <li class="active"><span><%= num + 1 %></span></li>
-            <% else: %>
-                <li><a href="<%= @getDocument().getPagedUrl(num) %>"><%= num + 1%></a></li>
-            <% end %>
+    <% end %>
+    <% if !@getDocument().hasNextPage(): %>
+        <span class="disabled">Next<span>
+    <% else: %>
+        <span><a href="<%= @getDocument().getNextPage() %>">Next</a></span>
         <% end %>
-        <% if !@getDocument().hasNextPage(): %>
-            <li class="disabled">Next</li>
-        <% else: %>
-            <li><a href="<%= @getDocument().getNextPage() %>">Next</a></li>
-        <% end %>
-    </ul>
-</div>
+</nav>
