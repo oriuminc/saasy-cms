@@ -74,7 +74,7 @@ module.exports = function(BasePlugin) {
 
     function initGitPad(cb) {
       //Initialize our Git Repo
-      gitpad.init(config.rootPath + '/src', cb);
+      gitpad.init(config.rootPath + '/src/contents', cb);
     }
 
     // Access our docpad configuration from within our plugin - for now, this is all to deal with content types

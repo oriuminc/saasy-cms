@@ -1,9 +1,28 @@
 # The DocPad Configuration File
 # It is simply a CoffeeScript Object which is parsed by CSON
 docpadConfig = {
-    watchOptions: preferredMethods: ['watchFile','watch']
+  watchOptions: preferredMethods: ['watchFile','watch']
 
-    # =================================
+  # =================================
+  # Paths Configuration
+
+  # Documents Paths
+  # An array of paths which contents will be treated as documents
+  # If it is a relative path, it will have the resolved `srcPath` prepended to it
+  documentsPaths: [
+      'contents/documents'
+  ]
+
+  # Files Paths
+  # An array of paths which contents will be treated as files
+  # If it is a relative path, it will have the resolved `srcPath` prepended to it
+  filesPaths: [
+      'contents/files'
+      'contents/public'
+  ]
+
+
+  # =================================
 	# Template Data
 	# These are variables that will be accessible via our templates
 	# To access one of these within our templates, refer to the FAQ: https://github.com/bevry/docpad/wiki/FAQ
