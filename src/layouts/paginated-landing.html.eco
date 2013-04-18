@@ -2,7 +2,7 @@
 layout: 'default'
 ---
 <% content = @content || @document.title %>
-<% if ! content: %>
+<% if ! content && @document.parentType: %>
   <% parent = @getCollection('html').findAll({pagedCollection:@document.parentType}).toJSON() %>
   <% if parent.length: %>
     <% content = parent[0].title + ' | ' + @document.category %>
