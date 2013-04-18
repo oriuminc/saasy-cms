@@ -1,5 +1,5 @@
 #saasy {
-    height:100%;
+   height:100%;
     width:205px;
     background:#efefef;
     position:fixed;
@@ -25,6 +25,7 @@
     background:red;
     color:#fff;
     padding:4px 8px;
+    display:none;
 }
 #saasy form > label {
     display:block;
