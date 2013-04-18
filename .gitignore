@@ -2,5 +2,4 @@
 .*.swo
 .*.swp
 /out/*
-/src/documents/*
-/src/files/*
+/src/contents/*
