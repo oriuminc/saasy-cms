@@ -28,7 +28,6 @@
         }]
     }], 
     "globalTypes": {
-        "In menu?": "checkbox",
         "Title": "text",
         "tags": "textarea"
     } 

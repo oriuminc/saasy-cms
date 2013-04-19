@@ -45,18 +45,18 @@ module.exports = function(BasePlugin) {
         loremIpsum = 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Quisque aliquam est convallis nibh vestibulum lacinia. Vestibulum dolor arcu, vulputate ut molestie sit amet, laoreet vitae mi. Suspendisse venenatis, quam at lacinia luctus, libero turpis molestie arcu, sed feugiat leo risus ac quam. Donec vel neque id tortor lacinia viverra. Pellentesque mollis justo purus. Cras quis tortor sed nibh fringilla gravida vitae eu diam. Ut erat elit, volutpat sed eleifend non, hendrerit vel tortor. Etiam facilisis sollicitudin venenatis. Morbi convallis tincidunt ligula, id tempor metus eleifend eu. Integer a risus ipsum, eu congue magna.'
         toReturn = '---\n';
 
-    //maybe we shouldn't do this - title is not a saasy concept - but title is lowercase in the metadata
-    //of all standard docpad modules/code
-    if(req.body.Title && ! req.body.title) {
-        req.body.title = req.body.Title;
-        delete req.body.Title;
-    }
+        //maybe we shouldn't do this - title is not a saasy concept - but title is lowercase in the metadata
+        //of all standard docpad modules/code
+        if(req.body.Title && !req.body.title) {
+            req.body.title = req.body.Title;
+            delete req.body.Title;
+        }
 
-    for (key in req.body) {
-      if (req.body.hasOwnProperty(key) && key !== 'Content') {
-        toReturn += key + ': "' + req.body[key] + '"\n';
-      }
-    }
+        for (key in req.body) {
+          if (req.body.hasOwnProperty(key) && key !== 'Content') {
+            toReturn += key + ': "' + req.body[key] + '"\n';
+          }
+        }
 
         return toReturn += '---\n\n' + (req.body.Content ? req.body.Content.replace('__loremIpsum', loremIpsum) : '');
       }
@@ -72,19 +72,18 @@ module.exports = function(BasePlugin) {
         });
     }
 
+    //Initialize our Git Repo
     function initGitPad() {
-      //Initialize our Git Repo
       gitpad.init(config.rootPath + '/src');
       gitpad.showStatus();
     }
 
-    // Access our docpad configuration from within our plugin - for now, this is all to deal with content types
+    //Bootstrap Saasy concepts when docpad is ready
     Saasy.prototype.docpadReady = function(opts) {
       docpad = opts.docpad;
       config = opts.docpad.config;
       
       getContentTypes(function (result) {
-        //get all content types and push special saasy gloabal fields to all types
         var key,
             len,
             len2,
@@ -94,13 +93,15 @@ module.exports = function(BasePlugin) {
             fileName,
             catCollection,
             cat;
+
+        //store all user defined content types 
         config.contentTypes = result.types;
         //special saasy global fields
         config.globalFields = {
             "Filename": "text",
             "Content": "textarea"
         };
-        //add saasy global fields and user specified global fields to all types
+        //add saasy global fields and user specified global fields to all content types
         for(key in result.globalTypes) {
             if(result.globalTypes.hasOwnProperty(key)) {
                 config.globalFields[key] = result.globalTypes[key];
@@ -119,13 +120,15 @@ module.exports = function(BasePlugin) {
                 });
                 docpad.setCollection(type + '-categories', catCollection); 
                 len2 = len2.length;
+                if(len2) {
+                    console.log('Blocking Docpad while creating categories...');
+                }
                 while(len2--) {
                     cat = result.types[len].categories[len2];
                     docpad.setCollection(type + ',' + cat, docpad.getCollection('documents').findAllLive({type:type, category: {$in:[cat]}},{date:-1})); 
                     fileName = config.documentsPaths + '/' + type + '/category-' + cat + '.html.md';
 
                     //we need to block here as docpad doesn't wait for a callback after letting you know it's ready, super sweet!
-                    console.log('Blocking Docpad while creating categories...');
                     if(! fs.existsSync(fileName)) {
                        fs.writeFileSync(fileName, fileBuilder({ body: {  
                         category: cat,
@@ -153,15 +156,16 @@ module.exports = function(BasePlugin) {
 
     // Inject our CMS front end to the server 'out' files
     Saasy.prototype.renderDocument = function(opts, next) {
-      var file = opts.file;
+      var file = opts.file,
+          injectionPoint = '<body>';
 
       function injectJs() {
-         opts.content = opts.content.replace('<body>',  '<body>' + saasyInjection);
+         opts.content = opts.content.replace(injectionPoint, injectionPoint + saasyInjection);
          next();
       }
       
       // Only inject Saasy into Layouts with a opening body tag
-      if (file.type === 'document' && file.attributes.isLayout && opts.content.indexOf('<body>') > -1) {
+      if (file.type === 'document' && file.attributes.isLayout && opts.content.indexOf(injectionPoint) > -1) {
         // If we've previously read our saasy cms files, then just inject the contents right away
         if (saasyInjection) {
           return injectJs();
@@ -346,6 +350,68 @@ module.exports = function(BasePlugin) {
         }  
     });
 
+    };
+   
+    /* Add Support for Multiple Layouts per Document */
+    var toRender;
+    Saasy.prototype.renderBefore = function(opts, next) {
+        var count = 0,
+            interval,
+            document;
+
+        toRender = [];
+
+        function addDoc(model) {
+          model.attributes.additionalLayouts.forEach(function(layout) {
+            count++;
+            document = docpad.createDocument(model.toJSON());
+            document.normalize({}, function () {
+                document.id = document.id.replace('.html', '.' + layout);
+                document.set('layout', layout);
+                document.contextualize({}, function () {
+                    toRender.push(document);
+                    console.log(count);
+                    if(!--count) {
+                        next();
+                    }
+                });
+            });
+          });
+        }
+        opts.collection.forEach(function(model) {
+            if(model.attributes.additionalLayouts) {
+               if(model.get('isPaged')) {
+                 return console.log("You cannot use multiple layouts on paged documents (for now), please copy the document and point the copy to the new layout");
+               }
+               addDoc(model); 
+            }
+        });
+        if (!count) {
+          next();
+        }
+    };
+    /* This is also used for multiple layouts per document */ 
+    Saasy.prototype.renderAfter = function(opts, next) {
+        if(!toRender.length) {
+            return next();
+        }
+        var count = 0,
+            database = docpad.getDatabase('html');
+        toRender.forEach(function(document) {
+            count++;
+            document.render({
+                templateData: docpad.getTemplateData()
+            }, function (err) {
+                if(err) {
+                  console.log("Error rending dynamic layout: " + err);
+                } else { 
+                  database.add(document);
+                }
+                if(!--count) {
+                  next();
+                }
+           });
+        });
     };
 
     return Saasy;
