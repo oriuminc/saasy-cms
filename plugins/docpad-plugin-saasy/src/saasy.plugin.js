@@ -45,18 +45,18 @@ module.exports = function(BasePlugin) {
         loremIpsum = 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Quisque aliquam est convallis nibh vestibulum lacinia. Vestibulum dolor arcu, vulputate ut molestie sit amet, laoreet vitae mi. Suspendisse venenatis, quam at lacinia luctus, libero turpis molestie arcu, sed feugiat leo risus ac quam. Donec vel neque id tortor lacinia viverra. Pellentesque mollis justo purus. Cras quis tortor sed nibh fringilla gravida vitae eu diam. Ut erat elit, volutpat sed eleifend non, hendrerit vel tortor. Etiam facilisis sollicitudin venenatis. Morbi convallis tincidunt ligula, id tempor metus eleifend eu. Integer a risus ipsum, eu congue magna.'
         toReturn = '---\n';
 
-    //maybe we shouldn't do this - title is not a saasy concept - but title is lowercase in the metadata
-    //of all standard docpad modules/code
-    if(req.body.Title && ! req.body.title) {
-        req.body.title = req.body.Title;
-        delete req.body.Title;
-    }
+        //maybe we shouldn't do this - title is not a saasy concept - but title is lowercase in the metadata
+        //of all standard docpad modules/code
+        if(req.body.Title && ! req.body.title) {
+            req.body.title = req.body.Title;
+            delete req.body.Title;
+        }
 
-    for (key in req.body) {
-      if (req.body.hasOwnProperty(key) && key !== 'Content') {
-        toReturn += key + ': "' + req.body[key] + '"\n';
-      }
-    }
+        for (key in req.body) {
+          if (req.body.hasOwnProperty(key) && key !== 'Content') {
+            toReturn += key + ': "' + req.body[key] + '"\n';
+          }
+        }
 
         return toReturn += '---\n\n' + (req.body.Content ? req.body.Content.replace('__loremIpsum', loremIpsum) : '');
       }
@@ -82,7 +82,32 @@ module.exports = function(BasePlugin) {
     Saasy.prototype.docpadReady = function(opts) {
       docpad = opts.docpad;
       config = opts.docpad.config;
+
       
+      // Extend the template functions
+      config.templateData.getCuratedCollection = function(name, curatedList, maxLength) {
+
+        var curation = docpad.getCollection('documents').findOne({type: 'curation', name: curatedList});
+        curation = curation ? curation.attributes.curation: [];
+        var collection = this.getCollection(name);
+
+        collection.comparator = function(a) {
+          return curation.indexOf(a.relativeBase);
+        };
+
+        function trim(collection) {
+          if (typeof maxLength === 'undefined') {
+            return collection;
+          }
+          // Trim our collections to the maxLength
+          collection.models = collection.models.slice(0, maxLength);
+          collection.length = maxLength;
+          return collection;
+        }
+
+        return trim(collection.findAll({relativeBase: {$in: curation}}));
+      }
+
       getContentTypes(function (result) {
         //get all content types and push special saasy gloabal fields to all types
         var key,
@@ -106,6 +131,7 @@ module.exports = function(BasePlugin) {
                 config.globalFields[key] = result.globalTypes[key];
             }    
         }
+
         //create a live collection for each content type for use in paginated lists
         len = result.types.length;
         while(len--) {
@@ -121,8 +147,7 @@ module.exports = function(BasePlugin) {
                 len2 = len2.length;
                 while(len2--) {
                     cat = result.types[len].categories[len2];
-                    docpad.setCollection(type + ',' + cat, docpad.getCollection('documents').findAllLive({type:type, category: {$in:[cat]}},{date:-1})); 
-                    fileName = config.documentsPaths + '/' + type + '/category-' + cat + '.html.md';
+                    docpad.setCollection(type + ',' + cat, docpad.getCollection('documents').findAllLive({type:type, category: {$in:[cat]}},{date:-1}));                     fileName = config.documentsPaths + '/' + type + '/category-' + cat + '.html.md';
 
                     //we need to block here as docpad doesn't wait for a callback after letting you know it's ready, super sweet!
                     console.log('Blocking Docpad while creating categories...');
@@ -189,6 +214,9 @@ module.exports = function(BasePlugin) {
             });
           });
         });
+      }
+      if (file.attributes.type === 'curation') {
+        file.attributes.write = false;
       }
       next();
     };
@@ -348,6 +376,34 @@ module.exports = function(BasePlugin) {
 
     };
 
+    /* Add Support for Multiple Layouts per Document */
+    Saasy.prototype.renderAfter = function(opts, next) {
+        var noneToRender = true,
+            document,
+            database = docpad.getDatabase('html');
+        opts.collection.models.forEach(function(model) {
+            if(model.attributes.additionalLayouts) {
+              model.attributes.additionalLayouts.forEach(function(layout) {
+                document = docpad.createDocument(model.toJSON());
+                
+                document.id = document.id.replace('.html', '.json'); 
+                document.set('basename', document.get('basename').replace('.html', '.json'));
+                document.render({
+                    templateData: docpad.getTemplateData()
+                }, function () {
+                    database.add(document);
+                    next();
+                });
+                noneToRender = false;
+              }); 
+            }
+        });
+        if (noneToRender) {
+          next();
+        }
+    };
+    
+    
     return Saasy;
   
   })(BasePlugin);
