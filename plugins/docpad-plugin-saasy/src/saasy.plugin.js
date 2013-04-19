@@ -72,10 +72,9 @@ module.exports = function(BasePlugin) {
         });
     }
 
-    function initGitPad() {
+    function initGitPad(cb) {
       //Initialize our Git Repo
-      gitpad.init(config.rootPath + '/src');
-      gitpad.showStatus();
+      gitpad.init(config.rootPath + '/src/contents', cb);
     }
 
     // Access our docpad configuration from within our plugin - for now, this is all to deal with content types
@@ -320,7 +319,10 @@ module.exports = function(BasePlugin) {
       // Express REST like CRUD operations
       function save(req, res) {
         fileWriter(fileBuilder(req), req, function(fileName) {
-          gitpad.saveFile(config.documentsPaths + fileName + '.md', 'User initiated save of ' + fileName);          
+          gitpad.saveFile(config.documentsPaths + fileName + '.md', 'User initiated save of ' + fileName, 
+            function(err) {
+              console.log(err);
+            });
           res.send(success(fileName));
         }, function () {
           res.send(fail);
