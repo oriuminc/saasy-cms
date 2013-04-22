@@ -189,9 +189,9 @@ module.exports = function(BasePlugin) {
         }
       });
 
-      fs.exists(config.outPath + '/dev-assets', function(exists){
+      fs.exists(config.outPath + '/saasy.js', function(exists){
         if (!exists) {
-          ncp(__dirname + '/dev-assets', config.outPath + '/dev-assets', function(err){
+          ncp(__dirname + '/saasy.js', config.outPath + '/saasy.js', function(err){
           if (err) {
             return console.log(err);
           }
@@ -211,7 +211,7 @@ module.exports = function(BasePlugin) {
       opts.content = opts.content.replace(/<article>/g, '<article contenteditable="false">');
 
       function injectJs() {
-        opts.content = opts.content.replace('<head>', '<head>\n\t<script src="/ckeditor/ckeditor.js"></script>\n\t<script src="/dev-assets/saasy.js"></script>');
+        opts.content = opts.content.replace('<head>', '<head>\n\t<script src="/ckeditor/ckeditor.js"></script>\n\t<script src="/saasy.js"></script>');
         opts.content = opts.content.replace('<body>',  '<body>' + saasyInjection);
         next();
       }
