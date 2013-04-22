@@ -6,6 +6,11 @@ docpadConfig = {
   # =================================
   # Paths Configuration
 
+  # Out Path
+  # Where should we put our generated website files?
+  # If it is a relative path, it will have the resolved `rootPath` prepended to it
+  outPath: 'out'  # default
+
   # Documents Paths
   # An array of paths which contents will be treated as documents
   # If it is a relative path, it will have the resolved `srcPath` prepended to it

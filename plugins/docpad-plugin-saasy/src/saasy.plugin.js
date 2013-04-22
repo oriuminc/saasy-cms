@@ -19,6 +19,7 @@ module.exports = function(BasePlugin) {
       saasyInjection,
       collections = {},
       gitpad = require('gitpad'),
+      ncp = require('ncp'),
       fs = require('fs'),
       docpad,
       config;
@@ -175,13 +176,44 @@ module.exports = function(BasePlugin) {
         //console.log(arguments);
     };
 
+
+    // Copy the ckeditor files over to the out directory
+    Saasy.prototype.generateAfter = function(opts, next) {
+      fs.exists(config.outPath + '/ckeditor', function(exists){
+        if (!exists) {
+          ncp(__dirname + '/ckeditor', config.outPath + '/ckeditor', function(err){
+          if (err) {
+            return console.log(err);
+          }
+        });
+        }
+      });
+
+      fs.exists(config.outPath + '/dev-assets', function(exists){
+        if (!exists) {
+          ncp(__dirname + '/dev-assets', config.outPath + '/dev-assets', function(err){
+          if (err) {
+            return console.log(err);
+          }
+        });
+        }
+      });
+
+      next();
+    }
+
+
     // Inject our CMS front end to the server 'out' files
     Saasy.prototype.renderDocument = function(opts, next) {
       var file = opts.file;
 
+      // enable inline editing for all 'article' element for now
+      opts.content = opts.content.replace(/<article>/g, '<article contenteditable="false">');
+
       function injectJs() {
-         opts.content = opts.content.replace('<body>',  '<body>' + saasyInjection);
-         next();
+        opts.content = opts.content.replace('<head>', '<head>\n\t<script src="/ckeditor/ckeditor.js"></script>\n\t<script src="/dev-assets/saasy.js"></script>');
+        opts.content = opts.content.replace('<body>',  '<body>' + saasyInjection);
+        next();
       }
       
       // Only inject Saasy into Layouts with a opening body tag
@@ -192,25 +224,19 @@ module.exports = function(BasePlugin) {
         }
 
         // Read the contents of our Saasy JS/CSS/HTML
-        return fs.readFile(__dirname + '/saasy.js', function (err, data) {
+        return  fs.readFile(__dirname + '/saasy.css', function (err, cssData) {
           if (err) {
             next();
             return console.log(err);
           }
-          fs.readFile(__dirname + '/saasy.css', function (err, cssData) {
+          fs.readFile(__dirname + '/saasy.html', function (err, markupData) {
             if (err) {
               next();
               return console.log(err);
             }
-            fs.readFile(__dirname + '/saasy.html', function (err, markupData) {
-              if (err) {
-                next();
-                return console.log(err);
-              }
-              // Build our file contents and inject them into the page markup
-              saasyInjection = '<style data-owner="saasy" type="text/css">' + cssData + '</style>' + markupData + '<script data-owner="saasy">var $S = { contentTypes:' + JSON.stringify(config.contentTypes) + ', globalFields:' + JSON.stringify(config.globalFields) +'};\n' + data + '</script>';
-              injectJs();
-            });
+            // Build our file contents and inject them into the page markup
+            saasyInjection = '<style data-owner="saasy" type="text/css">' + cssData + '</style>' + markupData + '<script data-owner="saasy">var $S = { contentTypes:' + JSON.stringify(config.contentTypes) + ', globalFields:' + JSON.stringify(config.globalFields) +'};\n' + '</script>';
+            injectJs();
           });
         });
       }
