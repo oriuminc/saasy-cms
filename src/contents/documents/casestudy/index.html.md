@@ -1,9 +1,9 @@
 ---
-pagedCollection: "casestudy"
-isPaged: "true"
-pageSize: "5"
-title: "casestudy"
-layout: "paginated-landing"
+title: 'Case Studies'
+layout: 'paginated-landing'
+pagedCollection: 'casestudy'
+In menu?: on
+isPaged: true
+pageSize: 2 
 ---
-
-casestudy
+Case Studies
