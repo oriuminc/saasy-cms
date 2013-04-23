@@ -2,9 +2,10 @@
 /*jslint plusplus: true*/
 
 document.addEventListener('DOMContentLoaded', function () {
+  
   'use strict';
   var generationLocation,
-    $msgSlot = $('#saasy .saasy-msg');
+      $msgSlot = $('#saasy .saasy-msg');
 
   function msg(str) {
     if (str) {
@@ -54,111 +55,112 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function buildForm(type, fileName) {
       var key,
-        obj,
-        innerKey,
-        myId,
-        myName,
-        html = '';
+          obj,
+          myId,
+          myName,
+          html = '';
 
       function buildInput(type, id, name) {
-        switch (type) {
-        case 'textarea':
-          return '<textarea id="' + id + '" name="' + name + '"></textarea>';
-        case 'image':
-          return '<input id="' + id + '" name="' + name + '" type="file">';
-        default:
-          return '<input id="' + id + '" name="' + name + '" type="' + type + '">';
-        }
+          switch (type) {
+          case 'textarea':
+              return '<textarea id="' + id + '" name="' + name + '"></textarea>';
+          case 'image':
+              return '<input id="' + id + '" name="' + name + '" type="file">';
+          default:
+              return '<input id="' + id + '" name="' + name + '" type="' + type + '">';
+          }
       }
 
       function loadData() {
-        $.ajax({
-          url: '/saasy/document/' + fileName
-        }).done(function (result) {
-          var key;
-          for (key in result.meta) {
-            if (result.meta.hasOwnProperty(key)) {
-              $('#saasy-form-' + key).attr('value', result.meta[key]);
-            }
-          }
-          //Content isn't stored in the meta
-          result.meta.Content = result.Content;
-        });
+          $.ajax({
+              url: '/saasy/document/' + fileName
+          }).done(function (result) {
+              var key;
+              for (key in result.meta) {
+                  if (result.meta.hasOwnProperty(key)) {
+                      $('#saasy-form-' + key).attr('value', result.meta[key]);
+                  }
+              }
+              //Content isn't stored in the meta
+              result.meta.Content = result.Content;
+          });
       }
 
       for (key in $S.globalFields) {
-        if ($S.globalFields.hasOwnProperty(key)) {
-          obj = $S.globalFields[key];
-          myId = 'saasy-form-' + key;
-          html += '<label for="' + myId + '">' + key + '</label>' + buildInput($S.globalFields[key], myId, key);
-        }
+          if ($S.globalFields.hasOwnProperty(key)) {
+              obj = $S.globalFields[key];
+              myId = 'saasy-form-' + key;
+              html += '<label for="' + myId + '">' + key + '</label>' + buildInput(obj, myId, key);
+          }
       }
 
       for (key in type.fields) {
-        if (type.fields.hasOwnProperty(key)) {
-          obj = type.fields[key];
-          innerKey = Object.keys(obj)[0];
-          myId = 'saasy-form-' + innerKey;
-          html += '<label for="' + myId + '">' + innerKey + '</label>' + buildInput(type.fields[key][innerKey], myId, innerKey);
-        }
+          if (type.fields.hasOwnProperty(key)) {
+              obj = type.fields[key];
+              myId = 'saasy-form-' + key;
+              html += '<label for="' + myId + '">' + key + '</label>' + buildInput(obj, myId, key);
+          }
       }
 
-      //lets leave the layout as a hidden field for now (ie one layout per content type)
-      html += '<input type="hidden" name="layout" value="' + type.layout + '">';
       html += '<input type="hidden" name="type" value="' + type.type + '">';
+      if (type.layout) {
+          html += '<input type="hidden" name="layout" value="' + (Array.isArray(type.layout) ? type.layout[0] : type.layout) + '">';
+      }
       html += '<input type="submit" value="Submit">';
       
       if (fileName) {
-        loadData();
+          loadData();
       }
-      
+    
       return html;
     }
 
     init();
 
     return {
-      createForm: function (type) {
-        $formSlot.html(buildForm(type));
-      },
-      editForm: function (type, fileName) {
-        $formSlot.html(buildForm(type, fileName));
-      },
-      create: function (data, done) {
-        msg('Creating Page...');
-        $.ajax({
-          url: '/saasy/',
-          type: 'POST',
-          data: data
-        }).done(function (result) {
-          window.setTimeout(function () {
-            msg('Generating Static Site...');
-          }, 800);
+        createForm: function (type) {
+            $formSlot.html(buildForm(type));
+        },
+        editForm: function (type, fileName) {
+            $formSlot.html(buildForm(type, fileName));
+        },
+        create: function (data, done) {
+            msg('Creating Page...');
+            $.ajax({
+                url: '/saasy/',
+                type: 'POST',
+                data: data
+            }).done(function (result) {
+                window.setTimeout(function () {
+                    msg('Generating Static Site...');
+                }, 800);
 
-          result = JSON.parse(result);
-          if (result.fileName) {
-            generationLocation = result.fileName;
-          }
+                result = JSON.parse(result);
+                if (result.fileName) {
+                    generationLocation = result.fileName;
+                }
 
-          if (done) {
-            return done(result);
-          }
-        });
-      },
-      createInline: function (type) {
-        var data = 'Filename=new ' + type.name.toLowerCase() + '&type=' + type.type + '&Content=__loremIpsum&title=New ' + type.name + '&layout=' + type.type;
-        this.create(data);
-      },
-      delete: function () {
-      },
-      rename: function () {
-      },
-      curate: function () {
-      }
+                if (done) {
+                    return done(result);
+                }
+            });
+        },
+        createInline: function (type) {
+            var data = 'Filename=new ' + type.name.toLowerCase() + '&type=' + type.type + '&Content=__loremIpsum&title=New ' + type.name;
+            if (type.layout) {
+                data += '&layout=' + (Array.isArray(type.layout) ? type.layout[0] : type.layout);
+            }
+            this.create(data);
+        },
+        delete: function () {
+        },
+        rename: function () {
+        },
+        curate: function () {
+        }
     };
-  
-  }());
-
+    
+    }());
 });
 
 

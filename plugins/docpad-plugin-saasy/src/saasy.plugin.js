@@ -41,19 +41,72 @@ module.exports = function(BasePlugin) {
         return str.trim().split(' ').join('-').substring(0, 40).toLowerCase();
     }
 
-  // Build the contents of a file to be saved as a string
-   function fileBuilder(req) {
+    //determines if a given content type has a layout
+    function hasLayout(type, parentKey) {
+        var len = config.contentTypes.length;
+        while(len--) {
+            if(type === config.contentTypes[len].type) {
+                if(parentKey && config.contentTypes[len][parentKey]) {
+                    return config.contentTypes[len][parentKey].layout;
+                } else {
+                    return config.contentTypes[len].layout;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    function getAdditionalLayouts(type, parentKey, dontTrimFirst) {
+        var layouts = hasLayout(type, parentKey),
+            layoutsCopy;
+        
+        if(Array.isArray(layouts) && layouts.length) {
+            var layoutsCopy = layouts.concat([]);
+            layoutsCopy.splice(0,1);
+            return layoutsCopy;
+        }
+
+        return [];
+    }
+
+    function getLayouts(type, parentKey) {
+        layouts = hasLayout(type, parentKey);
+        if(!layouts) {
+            return [];
+        }
+        if(!Array.isArray(layouts)) {
+            layouts = [layouts];
+        }
+        return layouts;
+    }    
+    
+    function getContentType(type) {
+        var len = config.contentTypes.length;
+        while(len--) {
+            if(type === config.contentTypes[len].type) {
+                return config.contentTypes[len]; 
+            }
+        }
+
+        return null;
+    }
+
+    // Build the contents of a file to be saved as a string
+   function fileBuilder(req, layout) {
     var key,
         loremIpsum = 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Quisque aliquam est convallis nibh vestibulum lacinia. Vestibulum dolor arcu, vulputate ut molestie sit amet, laoreet vitae mi. Suspendisse venenatis, quam at lacinia luctus, libero turpis molestie arcu, sed feugiat leo risus ac quam. Donec vel neque id tortor lacinia viverra. Pellentesque mollis justo purus. Cras quis tortor sed nibh fringilla gravida vitae eu diam. Ut erat elit, volutpat sed eleifend non, hendrerit vel tortor. Etiam facilisis sollicitudin venenatis. Morbi convallis tincidunt ligula, id tempor metus eleifend eu. Integer a risus ipsum, eu congue magna.'
         toReturn = '---\n';
 
         //maybe we shouldn't do this - title is not a saasy concept - but title is lowercase in the metadata
         //of all standard docpad modules/code
-        if(req.body.Title && ! req.body.title) {
+        if(req.body.Title && !req.body.title) {
             req.body.title = req.body.Title;
             delete req.body.Title;
         }
-
+        if(layout) {
+            req.body.layout = layout;
+        }
         for (key in req.body) {
           if (req.body.hasOwnProperty(key) && key !== 'Content') {
             toReturn += key + ': "' + req.body[key] + '"\n';
@@ -64,7 +117,7 @@ module.exports = function(BasePlugin) {
       }
 
     function getContentTypes(cb) {
-        var configPath = config.rootPath + '/saasy.config.json';
+        var configPath = config.rootPath + '/saasy.config.json.new';
         fs.readFile(configPath, function(err, data) {
           if (err) {
             console.log('Error reading your content types from ' + configPath);
@@ -79,57 +132,111 @@ module.exports = function(BasePlugin) {
       gitpad.init(config.rootPath + '/src/contents', cb);
     }
 
-    // Access our docpad configuration from within our plugin - for now, this is all to deal with content types
+    //Bootstrap Saasy concepts when docpad is ready
     Saasy.prototype.docpadReady = function(opts) {
       docpad = opts.docpad;
       config = opts.docpad.config;
-
       
       // Extend the template functions
-      config.templateData.getCuratedCollection = function(name, curatedList, maxLength) {
-
-        var curation = docpad.getCollection('documents').findOne({type: 'curation', name: curatedList});
+      
+      // This function will find all documents in a given curated list and sort them
+      // as specified by the curated list. We will also trim to a maxlength if specified
+      config.templateData.getCuratedCollection = function(curatedList, maxLength) {
+        var collection = this.getCollection('documents'),
+            curation = collection.findOne({type: 'curation', name: curatedList});
+        
         curation = curation ? curation.attributes.curation: [];
-        var collection = this.getCollection(name);
-
+        
+        /*
+        //the comparator was not a good choice here as we're using the 
+        //documents collection and it would cause the documents
+        //collection to be reordered everytime a new document is added in the future
+        
         collection.comparator = function(a) {
-          return curation.indexOf(a.relativeBase);
+          return curation.indexOf(a.attributes.relativeBase);
         };
+        */
 
-        function trim(collection) {
-          if (typeof maxLength === 'undefined') {
-            return collection;
-          }
-          // Trim our collections to the maxLength
-          collection.models = collection.models.slice(0, maxLength);
+        function sortAndTrim(collection) {
+          maxLength = maxLength || collection.length;
+          //sort our models based on the curated list and only return the maximum requested
+          collection.models = collection.models.sort(function(a, b) {
+            return curation.indexOf(a.attributes.relativeBase) - curation.indexOf(b.attributes.relativeBase);
+          }).slice(0, maxLength);
+
           collection.length = maxLength;
           return collection;
         }
 
-        return trim(collection.findAll({relativeBase: {$in: curation}}));
+        return sortAndTrim(collection.findAll({type: {$ne: 'generated'}, relativeBase: {$in: curation}}));
+      };
+
+      //Escape HTML for use in JSON
+      config.templateData.escapeForJSON = function (str) {
+            return !str ? '' : 
+                    str.replace(/[\\]/g, '\\\\')
+                       .replace(/[\"]/g, '\\\"')
+                       .replace(/[\/]/g, '\\/')
+                       .replace(/[\b]/g, '\\b')
+                       .replace(/[\f]/g, '\\f')
+                       .replace(/[\n]/g, '\\n')
+                       .replace(/[\r]/g, '\\r')
+                       .replace(/[\t]/g, '\\t');
+      };
+
+      //this creates a document via the file system, synchronously
+      //used for generating documents during the docpadready event (which doesn't wait for a callback, so we gotta block)
+      function createDocument(type, layouts, pageSize, category) {
+        var filePath = config.documentsPaths + '/' + type + '/',
+            fileName,
+            layout,
+            title,
+            len = layouts.length;
+        
+        if(! fs.existsSync(filePath)) {
+            fs.mkdir(filePath); 
+        }
+            
+        while(len--) {
+            layout = layouts[len];
+            fileName = (category ? ('/category-' + category) : 'index') + (len ? ('-' + layouts[len]) : '') + '.html.md';
+            if(! fs.existsSync(filePath + fileName)) {
+                title = type + (category ? ' | ' + category : ''); 
+                opts = { body: {  
+                    pagedCollection: type,
+                    isPaged: true,
+                    pageSize: pageSize || 5, //todo read this from config
+                    title: title,
+                    Content: title
+                }};
+                if (category) {
+                    opts.body.category = category;
+                    opts.body.parentType = type;
+                    opts.body.pagedCollection = type + ',' + category;
+                }
+               fs.writeFileSync(filePath + fileName, fileBuilder(opts, layout));
+            }
+        }
       }
 
       getContentTypes(function (result) {
-        //get all content types and push special saasy gloabal fields to all types
         var key,
             len,
             len2,
-            data,
-            apiData,
             type,
-            fileName,
-            catCollection,
-            cat;
+            catCollection;
+
+        //store all user defined content types 
         config.contentTypes = result.types;
         //special saasy global fields
         config.globalFields = {
             "Filename": "text",
             "Content": "textarea"
         };
-        //add saasy global fields and user specified global fields to all types
-        for(key in result.globalTypes) {
-            if(result.globalTypes.hasOwnProperty(key)) {
-                config.globalFields[key] = result.globalTypes[key];
+        //add saasy global fields and user specified global fields to all content types
+        for(key in result.globalFields) {
+            if(result.globalFields.hasOwnProperty(key)) {
+                config.globalFields[key] = result.globalFields[key];
             }    
         }
 
@@ -137,32 +244,24 @@ module.exports = function(BasePlugin) {
         len = result.types.length;
         while(len--) {
             type = result.types[len].type;
-            docpad.setCollection(type, docpad.getCollection('documents').findAllLive({type: type},{date:-1}));
-            len2 = result.types[len].categories;
+            docpad.setCollection(type, docpad.getCollection('documents').findAllLive({type:type}, {date:-1}));
+            createDocument(type, getLayouts(type, "landing"), result.types[len].landing && result.types[len].landing.pageSize);
+                
+            //now create a collection and a landing page for each category
+            len2 = result.types[len].categories && result.types[len].categories.names;
             if(len2) {
                 catCollection = new docpad.Collection();
-                result.types[len].categories.forEach(function(cat) {
+                result.types[len].categories.names.forEach(function(cat) {
                   catCollection.add({cat: cat});
                 });
                 docpad.setCollection(type + '-categories', catCollection); 
+                
                 len2 = len2.length;
                 while(len2--) {
-                    cat = result.types[len].categories[len2];
-                    docpad.setCollection(type + ',' + cat, docpad.getCollection('documents').findAllLive({type:type, category: {$in:[cat]}},{date:-1}));                     fileName = config.documentsPaths + '/' + type + '/category-' + cat + '.html.md';
-
-                    //we need to block here as docpad doesn't wait for a callback after letting you know it's ready, super sweet!
-                    console.log('Blocking Docpad while creating categories...');
-                    if(! fs.existsSync(fileName)) {
-                       fs.writeFileSync(fileName, fileBuilder({ body: {  
-                        category: cat,
-                        parentType: type,
-                        pagedCollection: type + ',' + cat,
-                        layout: 'paginated-landing',
-                        isPaged: true,
-                        pageSize: 1
-                       }}));
-                    }
-                } 
+                    cat = result.types[len].categories.names[len2];
+                    docpad.setCollection(type + ',' + cat, docpad.getCollection(type).findAllLive({category: {$in:[cat]}},{date:-1}));                     
+                    createDocument(type, getLayouts(type, "categories"), result.types[len].categories.pageSize, cat);
+                }
             }
         }
       });
@@ -171,7 +270,7 @@ module.exports = function(BasePlugin) {
       initGitPad();
     };
 
-    /* we may be able to use this to prevent generations from clobbering other generations */
+    /* we may be able to use this to force docpad to generate everythingn */ 
     Saasy.prototype.generateBefore = function (opts) {
         //opts.reset = true;
         //console.log(arguments);
@@ -212,7 +311,8 @@ module.exports = function(BasePlugin) {
 
     // Inject our CMS front end to the server 'out' files
     Saasy.prototype.renderDocument = function(opts, next) {
-      var file = opts.file;
+      var file = opts.file,
+          injectionPoint = '<body>';
 
       // Enable inline editing for all appropriate elements
       // - For now do not allow inline editing for paginated views
@@ -231,7 +331,7 @@ module.exports = function(BasePlugin) {
       }
       
       // Only inject Saasy into Layouts with a opening body tag
-      if (file.type === 'document' && file.attributes.isLayout && opts.content.indexOf('<body>') > -1) {
+      if (file.type === 'document' && file.attributes.isLayout && opts.content.indexOf(injectionPoint) > -1) {
         // If we've previously read our saasy cms files, then just inject the contents right away
         if (saasyInjection) {
           return injectJs();
@@ -254,7 +354,7 @@ module.exports = function(BasePlugin) {
           });
         });
       }
-      if (file.attributes.type === 'curation') {
+      if (file.attributes.type === 'curation' || (file.attributes.type && !hasLayout(file.attributes.type) && ! file.get('isPaged'))) {
         file.attributes.write = false;
       }
       next();
@@ -417,35 +517,88 @@ module.exports = function(BasePlugin) {
     });
 
     };
-
+   
     /* Add Support for Multiple Layouts per Document */
-    Saasy.prototype.renderAfter = function(opts, next) {
-        var noneToRender = true,
-            document,
-            database = docpad.getDatabase('html');
-        opts.collection.models.forEach(function(model) {
-            if(model.attributes.additionalLayouts) {
-              model.attributes.additionalLayouts.forEach(function(layout) {
-                document = docpad.createDocument(model.toJSON());
-                
-                document.id = document.id.replace('.html', '.json'); 
-                document.set('basename', document.get('basename').replace('.html', '.json'));
-                document.render({
-                    templateData: docpad.getTemplateData()
-                }, function () {
-                    database.add(document);
-                    next();
+    var toRender;
+    Saasy.prototype.renderBefore = function(opts, next) {
+        var count = 0,
+            interval,
+            document;
+
+        toRender = [];
+        
+        function addDoc(model, additionalLayouts) {
+          additionalLayouts.forEach(function(layout) {
+            count++;
+            document = docpad.createDocument(model.toJSON());
+            document.normalize({}, function () {
+                var name = document.get('basename') + '-' + layout;
+                document.id = name;
+                document.set('basename', name);
+                document.set('layout', layout);
+                document.setMeta('type', 'generated');
+                document.contextualize({}, function () {
+                    toRender.push(document);
+                    if(!--count) {
+                        next();
+                    }
                 });
-                noneToRender = false;
-              }); 
+            });
+          });
+        }
+
+        opts.collection.forEach(function(model) {
+            var meta = model.getMeta().attributes,
+                key,
+                contentType = getContentType(meta.type);
+            if(contentType) {
+                //"expand" all compound data types
+                for(key in contentType.fields) {
+                    if(contentType.fields.hasOwnProperty(key) && getContentType(contentType.fields[key]) && meta[key]) {
+                        var obj = docpad.getCollection(contentType.fields[key]).findOne({ relativeBase:meta[key]});
+                        model.set('$' + key, docpad.getCollection(contentType.fields[key]).findOne({ relativeBase:meta[key]}).attributes);
+                    }
+                }
+            }
+
+            var additionalLayouts = getAdditionalLayouts(model.attributes.type || model.attributes.pagedCollection);
+            if(additionalLayouts.length) {
+               if(model.get('isPaged')) {
+                 //paged documents are handled by the paged plugin
+                 return;
+               }
+               addDoc(model, additionalLayouts); 
             }
         });
-        if (noneToRender) {
+        if (!count) {
           next();
         }
     };
-    
-    
+
+    /* This is also used for multiple layouts per document */ 
+    Saasy.prototype.renderAfter = function(opts, next) {
+        if(!toRender.length) {
+            return next();
+        }
+        var count = 0,
+            database = docpad.getDatabase('html');
+        toRender.forEach(function(document) {
+            count++;
+            document.render({
+                templateData: docpad.getTemplateData()
+            }, function (err) {
+                if(err) {
+                  console.log("Error rending dynamic layout: " + err);
+                } else {
+                  database.add(document);
+                }
+                if(!--count) {
+                  next();
+                }
+           });
+        });
+    };
+
     return Saasy;
   
   })(BasePlugin);
