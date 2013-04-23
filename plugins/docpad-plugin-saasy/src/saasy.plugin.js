@@ -18,6 +18,7 @@ module.exports = function(BasePlugin) {
   var Saasy,
       saasyInjection,
       collections = {},
+      cheerio = require('cheerio'),
       gitpad = require('gitpad'),
       ncp = require('ncp'),
       fs = require('fs'),
@@ -202,17 +203,30 @@ module.exports = function(BasePlugin) {
       next();
     }
 
+    Saasy.prototype.render = function(opts) {
+      if (opts.inExtension == 'eco') {
+
+      }
+      console.log(opts.inExtension, opts.outExtension, opts.file.get('url'));
+    }
 
     // Inject our CMS front end to the server 'out' files
     Saasy.prototype.renderDocument = function(opts, next) {
       var file = opts.file;
 
-      // enable inline editing for all 'article' element for now
-      opts.content = opts.content.replace(/<article>/g, '<article contenteditable="false">');
+      // Enable inline editing for all appropriate elements
+      // - For now do not allow inline editing for paginated views
+      if (file.type === 'document' && !file.get('isPaged')) {
+        $ = cheerio.load(opts.content);
+        $('section article').attr('contenteditable', 'false');
+        $('section :header').attr('contenteditable', 'false');
+        opts.content = $.html();
+      }
+
 
       function injectJs() {
         opts.content = opts.content.replace('<head>', '<head>\n\t<script src="/ckeditor/ckeditor.js"></script>\n\t<script src="/saasy.js"></script>');
-        opts.content = opts.content.replace('<body>',  '<body>' + saasyInjection);
+        opts.content = opts.content.replace('<body>', '<body>' + saasyInjection);
         next();
       }
       
