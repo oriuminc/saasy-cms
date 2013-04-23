@@ -55,7 +55,6 @@ document.addEventListener('DOMContentLoaded', function () {
         function buildForm(type, fileName) {
             var key,
                 obj,
-                innerKey,
                 myId,
                 myName,
                 html = '';
@@ -90,22 +89,22 @@ document.addEventListener('DOMContentLoaded', function () {
                 if ($S.globalFields.hasOwnProperty(key)) {
                     obj = $S.globalFields[key];
                     myId = 'saasy-form-' + key;
-                    html += '<label for="' + myId + '">' + key + '</label>' + buildInput($S.globalFields[key], myId, key);
+                    html += '<label for="' + myId + '">' + key + '</label>' + buildInput(obj, myId, key);
                 }
             }
 
             for (key in type.fields) {
                 if (type.fields.hasOwnProperty(key)) {
                     obj = type.fields[key];
-                    innerKey = Object.keys(obj)[0];
-                    myId = 'saasy-form-' + innerKey;
-                    html += '<label for="' + myId + '">' + innerKey + '</label>' + buildInput(type.fields[key][innerKey], myId, innerKey);
+                    myId = 'saasy-form-' + key;
+                    html += '<label for="' + myId + '">' + key + '</label>' + buildInput(obj, myId, key);
                 }
             }
 
-            //lets leave the layout as a hidden field for now (ie one layout per content type)
-            html += '<input type="hidden" name="layout" value="' + type.layout + '">';
             html += '<input type="hidden" name="type" value="' + type.type + '">';
+            if (type.layout) {
+                html += '<input type="hidden" name="layout" value="' + (Array.isArray(type.layout) ? type.layout[0] : type.layout) + '">';
+            }
             html += '<input type="submit" value="Submit">';
             
             if (fileName) {
@@ -146,7 +145,10 @@ document.addEventListener('DOMContentLoaded', function () {
                 });
             },
             createInline: function (type) {
-                var data = 'Filename=new ' + type.name.toLowerCase() + '&type=' + type.type + '&Content=__loremIpsum&title=New ' + type.name + '&layout=' + type.type;
+                var data = 'Filename=new ' + type.name.toLowerCase() + '&type=' + type.type + '&Content=__loremIpsum&title=New ' + type.name;
+                if (type.layout) {
+                    data += '&layout=' + (Array.isArray(type.layout) ? type.layout[0] : type.layout);
+                }
                 this.create(data);
             },
             delete: function () {

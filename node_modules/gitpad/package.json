@@ -1,0 +1,9 @@
+{
+  "name": "gitpad",
+  "description": "A thin layer module for docpad plugin to use git version control",
+  "version": "0.0.1",
+  "dependencies": {
+    "gift": ">=0.0.5"
+  },
+  "main": "./gitpad.js"
+}

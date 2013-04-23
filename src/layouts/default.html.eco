@@ -51,7 +51,7 @@
     <header>
         <!-- Site Nav -->
         <nav>
-            <% for page in @getCollection('html').findAll({'In menu?': 'on'}).toJSON(): %>
+            <% for page in @getCuratedCollection('menu', 2).toJSON(): %>
                 <% if page.url.indexOf('-page-') == -1: %>
                     <a href="<%= page.url.replace('index.html', '') %>">
 	                    <%= page.title %>
@@ -83,7 +83,7 @@
                     <% end %> 
                 <% end %>
                 <% thisCrumb = @document.title %>
-                <% if @document.parentType: %>
+                <% if @document.parentType && @document.category: %>
                     <% thisCrumb = @document.category %> 
                 <% end %>
                 <%= thisCrumb %>

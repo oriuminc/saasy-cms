@@ -4,6 +4,10 @@ layout: 'default'
 
 <h1><%= @document.title %></h1>
 <article>
+    <% if @document.$Author: %>
+       <%= @document.$Author.content %>
+    <% end %>
+    <%- @include('person', @document.Author) %>
     <%- @content %>
 </article>
 

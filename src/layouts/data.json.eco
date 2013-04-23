@@ -1,0 +1,29 @@
+<% content = @content || @document.title %>
+<%if ! content && @document.parentType: %>
+  <% parent = @getCollection('html').findAll({pagedCollection:@document.parentType}).toJSON() %>
+  <%if parent.length: %>
+    <% content = parent[0].title + ' | ' + @document.category %>
+    <% @document.title = content %>
+  <% end %>
+<% end %>
+
+
+{"title": "<%= @document.title %>",
+"content":"<%- @escapeForJSON (content) %>",
+<%if @document.pagedCollection: %>
+    "documents": [
+    <% collection = @document.pagedCollection %>
+    <% posts = @getCollection(collection) %>
+    <% for i in [@document.page.startIdx...@document.page.endIdx]: %>
+          <% document = posts.at(i).toJSON() %>
+              {"title":"<%=document.title%>",
+               "url": "<%= document.url %>",
+              "date":"<%= document.date.toLocaleDateString() %>",
+              "content":"<%- @escapeForJSON (document.contentRenderedWithoutLayouts) %>"
+            }<%if i + 1 != @document.page.endIdx: %>,<% end %>
+    <% end %>
+    ],
+    "pageNum": <%= @document.page.number + 1 %>,
+    "numPages":<%= @document.page.count %>
+<% end %>
+}

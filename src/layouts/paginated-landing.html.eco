@@ -27,6 +27,7 @@ layout: 'default'
 <% end %>
 
 
+<%if @document.page.count && @document.page.count > 1: %>
 <nav class="pagination">
     <% if !@getDocument().hasPrevPage(): %>
         <span class="disabled"><span>Previous</span>
@@ -46,3 +47,4 @@ layout: 'default'
         <span><a href="<%= @getDocument().getNextPage() %>">Next</a></span>
         <% end %>
 </nav>
+<% end %>

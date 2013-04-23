@@ -1,0 +1,58 @@
+{
+    "globalFields": {
+        "Title": "text",
+        "tags": "textarea"
+   }, 
+   "types": [
+    {
+        "name": "Blog Post",
+        "type": "blog",
+        "layout": ["blog", "data"],
+        "fields": { 
+            "Featured Image": "image",
+            "Authored Date": "date" ,
+            "Author": "person" 
+        },
+        "categories": {
+            "names": [
+                "Tech",
+                "Design"
+            ],
+            "pageSize": 1,
+            "layout": ["paginated-landing", "data"]
+        }, 
+        "landing": {
+            "pageSize": 5,
+            "layout": ["paginated-landing", "data"]
+        }
+    }, {
+        "name": "Case Study",
+        "type": "casestudy",
+        "layout": "casestudy",
+        "fields": {
+            "Hero Image": "image",
+            "Project URL": "url",
+            "Teaser Text": "textarea",   
+            "Pull Quote": "textarea"
+        },
+        "landing": {
+            "numPages": 2,
+            "layout": "paginated-landing"
+        }
+    }, {
+        "name": "Person",
+        "type": "person",
+        "fields": {
+            "Name": "text",
+            "Photo": "image",
+            "Quote": "text"
+        }
+    }, {
+        "name": "Job Posting",
+        "type": "jobposting",
+        "fields": { 
+            "Position": "text",
+            "Description": "textarea"    
+        }
+    }] 
+}
