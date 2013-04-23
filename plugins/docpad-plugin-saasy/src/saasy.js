@@ -179,29 +179,29 @@ function enableInlineAll() {
 
 // Save edited content
 function saveAll() {
-  $('[contenteditable="true"]').attr("contenteditable", "false");
   $('.edit-page').show();
   $('.save-page').hide();
   $('.exit-edit').hide();
 
   console.log(CKEDITOR.instances);
   if (CKEDITOR.instances) {
-    for(name in CKEDITOR.instances){
+    for (name in CKEDITOR.instances){
       CKEDITOR.instances[name].destroy();
     }
   }
+  $('[contenteditable="true"]').attr("contenteditable", "false");
 }
 
 // Exit edit mode (without saving)
 function exitEdit() {
-  $('[contenteditable="true"]').attr("contenteditable", "false");
   $('.edit-page').show();
   $('.save-page').hide();
   $('.exit-edit').hide();
 
   if (CKEDITOR.instances) {
-    for(name in CKEDITOR.instances){
+    for (name in CKEDITOR.instances){
       CKEDITOR.instances[name].destroy();
     }
   }
+  $('[contenteditable="true"]').attr("contenteditable", "false");
 }
