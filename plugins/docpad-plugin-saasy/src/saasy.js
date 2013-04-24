@@ -50,6 +50,7 @@ document.addEventListener('DOMContentLoaded', function () {
         $S.API.create($(this).serialize());
       });
 
+      $('body').html($('body').html().replace(/{editable}(.*){\/editable}/g, '<div style="display:inline" id="editable" contenteditable="false">$1</div>'));
       msg();
     }
 
