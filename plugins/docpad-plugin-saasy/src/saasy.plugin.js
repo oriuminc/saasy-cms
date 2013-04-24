@@ -17,6 +17,7 @@ var __hasProp = {}.hasOwnProperty,
 module.exports = function(BasePlugin) {
   var Saasy,
       saasyInjection,
+      saasyDependencies = '<script src="/ckeditor/ckeditor.js"></script><script src="/saasy.js"></script><script src="/angular.js"></script><script src="/admin.js"></script>',
       collections = {},
       gitpad = require('gitpad'),
       ncp = require('ncp'),
@@ -97,22 +98,16 @@ module.exports = function(BasePlugin) {
         loremIpsum = 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Quisque aliquam est convallis nibh vestibulum lacinia. Vestibulum dolor arcu, vulputate ut molestie sit amet, laoreet vitae mi. Suspendisse venenatis, quam at lacinia luctus, libero turpis molestie arcu, sed feugiat leo risus ac quam. Donec vel neque id tortor lacinia viverra. Pellentesque mollis justo purus. Cras quis tortor sed nibh fringilla gravida vitae eu diam. Ut erat elit, volutpat sed eleifend non, hendrerit vel tortor. Etiam facilisis sollicitudin venenatis. Morbi convallis tincidunt ligula, id tempor metus eleifend eu. Integer a risus ipsum, eu congue magna.'
         toReturn = '---\n';
 
-        //maybe we shouldn't do this - title is not a saasy concept - but title is lowercase in the metadata
-        //of all standard docpad modules/code
-        if(req.body.Title && !req.body.title) {
-            req.body.title = req.body.Title;
-            delete req.body.Title;
-        }
         if(layout) {
             req.body.layout = layout;
         }
         for (key in req.body) {
-          if (req.body.hasOwnProperty(key) && key !== 'Content') {
+          if (req.body.hasOwnProperty(key) && key !== 'content') {
             toReturn += key + ': "' + req.body[key] + '"\n';
           }
         }
 
-        return toReturn += '---\n\n' + (req.body.Content ? req.body.Content.replace('__loremIpsum', loremIpsum) : '');
+        return toReturn += '---\n\n' + (req.body.content ? req.body.content.replace('__loremIpsum', loremIpsum) : '');
       }
 
     function getContentTypes(cb) {
@@ -204,9 +199,9 @@ module.exports = function(BasePlugin) {
                 opts = { body: {  
                     pagedCollection: type,
                     isPaged: true,
-                    pageSize: pageSize || 5, //todo read this from config
+                    pageSize: pageSize || 5,
                     title: title,
-                    Content: title
+                    content: title
                 }};
                 if (category) {
                     opts.body.category = category;
@@ -229,8 +224,8 @@ module.exports = function(BasePlugin) {
         config.contentTypes = result.types;
         //special saasy global fields
         config.globalFields = {
-            "Filename": "text",
-            "Content": "textarea"
+            "filename": "text",
+            "content": "textarea"
         };
         //add saasy global fields and user specified global fields to all content types
         for(key in result.globalFields) {
@@ -288,9 +283,9 @@ module.exports = function(BasePlugin) {
         }
       });
 
-      fs.exists(config.outPath + '/saasy.js', function(exists){
+      fs.exists(config.outPath + '/angular.js', function(exists){
         if (!exists) {
-          ncp(__dirname + '/saasy.js', config.outPath + '/saasy.js', function(err){
+          ncp(__dirname + '/angular.js', config.outPath + '/angular.js', function(err){
           if (err) {
             return console.log(err);
           }
@@ -298,6 +293,16 @@ module.exports = function(BasePlugin) {
         }
       });
 
+      ncp(__dirname + '/saasy.js', config.outPath + '/saasy.js', function(err){
+        if (err) {
+          return console.log(err);
+        }
+      });
+      ncp(__dirname + '/admin.js', config.outPath + '/admin.js', function(err) {
+        if (err) {
+          return console.log(err);
+        }
+      });
       next();
     }
 
@@ -308,11 +313,9 @@ module.exports = function(BasePlugin) {
           injectionPoint = '<body>';
 
       // enable inline editing for all 'article' element for now
-      opts.content = opts.content.replace(/<article>/g, '<article contenteditable="false">');
-
+      
       function injectJs() {
-        opts.content = opts.content.replace('<head>', '<head>\n\t<script src="/ckeditor/ckeditor.js"></script>\n\t<script src="/saasy.js"></script>');
-        opts.content = opts.content.replace('<body>',  '<body>' + saasyInjection);
+        opts.content = opts.content.replace('</head>', saasyDependencies + '</head>').replace('<body>', '<body>' + saasyInjection);
         next();
       }
       
@@ -340,6 +343,7 @@ module.exports = function(BasePlugin) {
           });
         });
       }
+        
       if (file.attributes.type === 'curation' || (file.attributes.type && !hasLayout(file.attributes.type) && ! file.get('isPaged'))) {
         file.attributes.write = false;
       }
@@ -360,7 +364,7 @@ module.exports = function(BasePlugin) {
 
       // Write the contents of a file to DOCPATH documents folder
       function fileWriter(str, req, cbSuccess, cbFail) {
-        var fileName = fixFilePath(req.body.Filename)
+        var fileName = fixFilePath(req.body.filename)
             type = fixFilePath(req.body.type);
 
         function write () {
@@ -399,8 +403,8 @@ module.exports = function(BasePlugin) {
 
       // Deletes a document in the DOCPATH documents folder
       function fileDeleter(req, cbSuccess, cbFail) {
-        var filePath = config.documentsPaths + '/' + fixFilePath(req.body.type) + '/' + req.body.url + '.html.md';
-        if (req.body.type && req.body.url) {
+        var filePath = config.documentsPaths + '/' + fixFilePath(req.body.type) + '/' + req.body.filename + '.html.md';
+        if (req.body.type && req.body.filename) {
           return fs.exists(filePath, function (exists) {
             if (!exists) {
               cbFail();
@@ -486,6 +490,7 @@ module.exports = function(BasePlugin) {
       //Get a Document 
       server.get('/saasy/document/:type?/:filename?', function(req, res) {
         if(req.params.type && req.params.filename) {
+            console.log(JSON.stringify(docpad.getFile({type: req.params.type, basename: req.params.filename})));
             res.send(docpad.getFile({type: req.params.type, basename: req.params.filename}));
         } else if (req.params.type) {
             var filter = {},
@@ -560,7 +565,7 @@ module.exports = function(BasePlugin) {
           next();
         }
     };
-
+    
     /* This is also used for multiple layouts per document */ 
     Saasy.prototype.renderAfter = function(opts, next) {
         if(!toRender.length) {
