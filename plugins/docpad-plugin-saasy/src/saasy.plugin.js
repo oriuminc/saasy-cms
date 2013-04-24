@@ -137,7 +137,9 @@ module.exports = function(BasePlugin) {
       docpad = opts.docpad;
       config = opts.docpad.config;
       
-      // Extend the template functions
+      /*
+        Extend the template functions
+      */
       
       // This function will find all documents in a given curated list and sort them
       // as specified by the curated list. We will also trim to a maxlength if specified
@@ -171,7 +173,7 @@ module.exports = function(BasePlugin) {
         return sortAndTrim(collection.findAll({type: {$ne: 'generated'}, relativeBase: {$in: curation}}));
       };
 
-      //Escape HTML for use in JSON
+      // Escape HTML for use in JSON
       config.templateData.escapeForJSON = function (str) {
             return !str ? '' : 
                     str.replace(/[\\]/g, '\\\\')
@@ -182,6 +184,11 @@ module.exports = function(BasePlugin) {
                        .replace(/[\n]/g, '\\n')
                        .replace(/[\r]/g, '\\r')
                        .replace(/[\t]/g, '\\t');
+      };
+
+      // Automatically wraps contents for inline editing
+      config.templateData.editable = function (key) {
+        return "<div style='inline-block' contenteditable='false'>"+ +"</div>"
       };
 
       //this creates a document via the file system, synchronously
@@ -270,32 +277,28 @@ module.exports = function(BasePlugin) {
       initGitPad();
     };
 
-    /* we may be able to use this to force docpad to generate everythingn */ 
+    /* we may be able to use this to force docpad to generate everything */ 
     Saasy.prototype.generateBefore = function (opts) {
         //opts.reset = true;
         //console.log(arguments);
     };
 
 
-    // Copy the ckeditor files over to the out directory
+    // Copy the script files over to the out directory
     Saasy.prototype.generateAfter = function(opts, next) {
       fs.exists(config.outPath + '/ckeditor', function(exists){
         if (!exists) {
           ncp(__dirname + '/ckeditor', config.outPath + '/ckeditor', function(err){
-          if (err) {
-            return console.log(err);
-          }
+            if (err) {
+              return console.log(err);
+            }
         });
         }
       });
 
-      fs.exists(config.outPath + '/saasy.js', function(exists){
-        if (!exists) {
-          ncp(__dirname + '/saasy.js', config.outPath + '/saasy.js', function(err){
-          if (err) {
-            return console.log(err);
-          }
-        });
+      ncp(__dirname + '/saasy.js', config.outPath + '/saasy.js', function(err){
+        if (err) {
+          return console.log(err);
         }
       });
 
@@ -303,10 +306,10 @@ module.exports = function(BasePlugin) {
     }
 
     Saasy.prototype.render = function(opts) {
-      if (opts.inExtension == 'eco') {
-
-      }
-      console.log(opts.inExtension, opts.outExtension, opts.file.get('url'));
+      // console.log(opts.outExtension);
+      // if (opts.inExtension.toLowerCase() === 'eco' && opts.file.get('url').split('.').pop().toLowerCase() === 'html') {
+      //   opts.content = opts.content.replace(/<%[=|-]\s?(@content|@document\..+)\s?%>/g, '<div style="display: inline" contenteditable="false">$1</div>');
+      // }
     }
 
     // Inject our CMS front end to the server 'out' files
@@ -316,12 +319,12 @@ module.exports = function(BasePlugin) {
 
       // Enable inline editing for all appropriate elements
       // - For now do not allow inline editing for paginated views
-      if (file.type === 'document' && !file.get('isPaged')) {
-        $ = cheerio.load(opts.content);
-        $('section article').attr('contenteditable', 'false');
-        $('section :header').attr('contenteditable', 'false');
-        opts.content = $.html();
-      }
+      // if (file.type === 'document' && !file.get('isPaged')) {
+      //   $ = cheerio.load(opts.content);
+      //   $('section article').attr('contenteditable', 'false');
+      //   $('section :header').attr('contenteditable', 'false');
+      //   opts.content = $.html();
+      // }
 
 
       function injectJs() {
@@ -497,24 +500,54 @@ module.exports = function(BasePlugin) {
         });
       });
       
-      //Get a Document 
+      // Get a Document 
       server.get('/saasy/document/:type?/:filename?', function(req, res) {
+
+        // A helper function that takes a docpad file and output an object with desired fields from the file
+        var fetchFields = function(file) {
+          var data = { meta: file.meta, content: file.attributes.content };
+          for (field in req.params.additionalFileds) {
+            data[field] = file.attributes[field];
+          }
+          return data;
+        }
+
+        // If type and filename are both specified, send specific file
         if(req.params.type && req.params.filename) {
-            res.send(docpad.getFile({type: req.params.type, basename: req.params.filename}));
+          var file = docpad.getFile({type: req.params.type, basename: req.params.filename});
+          res.send(fetchFields(file));
+
+        // If only type specified, send everthing in that type
         } else if (req.params.type) {
-            var filter = {},
-                sort = {};
-            for(key in req.query) {
-                if(req.query.hasOwnProperty(key)) {
-                    filter[key] = {$in:req.query[key].split(',')};
-                }
+          var filter = {},
+              sort = {};
+          for(key in req.query) {
+            if(req.query.hasOwnProperty(key)) {
+              filter[key] = {$in:req.query[key].split(',')};
             }
-            sort[req.query.sort || 'date'] = req.query.sortOrder || -1;
-            res.send(docpad.getCollection(req.params.type).findAll(filter, sort));
+          }
+
+          sort[req.query.sort || 'date'] = req.query.sortOrder || -1;
+          var collection = docpad.getCollection(req.params.type).findAll(filter, sort);
+          var dataArray = [];
+          for (var i=0; i<collection.models.length; i++) {
+            dataArray.push(fetchFields(collection.at(i)));
+          }
+
+          res.send(dataArray);
+
+        // If nothing specified, send all files (this includes the layout files!!)
         } else {
-            res.send(docpad.getFiles({}));
-        }  
-    });
+          var collection = docpad.getFiles({});
+          var dataArray = [];
+          var dataArray = [];
+          for (var i=0; i<collection.models.length; i++) {
+            dataArray.push(fetchFields(collection.at(i)));
+          }
+
+          res.send(dataArray);
+        }
+      });
 
     };
    
@@ -569,7 +602,15 @@ module.exports = function(BasePlugin) {
                }
                addDoc(model, additionalLayouts); 
             }
+
+            if (model.get('type')) {
+              model.set('title', '{editable}'+model.get('title')+'{/editable}');
+              model.set('content', '{editable}'+model.get('content')+'{/editable}');
+            }
+
+
         });
+
         if (!count) {
           next();
         }
