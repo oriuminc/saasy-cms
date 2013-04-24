@@ -506,7 +506,6 @@ module.exports = function(BasePlugin) {
         // A helper function that takes a docpad file and output an object with desired fields from the file
         function fetchFields(file) {
           var data = { meta: file.meta, content: file.attributes.content };
-          console.log(req.query.af);
           for (var i = 0; req.query.af && i<req.query.af.length; i++) {
             var field = req.query.af[i];
             data[field] = file.attributes[field];
