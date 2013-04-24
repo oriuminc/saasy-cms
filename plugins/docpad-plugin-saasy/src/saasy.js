@@ -5,6 +5,7 @@ document.addEventListener('DOMContentLoaded', function () {
   
   'use strict';
   var generationLocation,
+      $slot = $('#saasy'),
       $msgSlot = $('#saasy .saasy-msg');
 
   function msg(str) {
@@ -39,7 +40,9 @@ document.addEventListener('DOMContentLoaded', function () {
       for (key in $S.contentTypes) {
         if ($S.contentTypes.hasOwnProperty(key)) {
           html += '<a href=\'javascript:$S.API.createForm($S.contentTypes[' + key + '])\'>Form ' + $S.contentTypes[key].name + '</a>';
-          html2 += '<a href=\'javascript:$S.API.createInline($S.contentTypes[' + key + '])\'>Inline ' + $S.contentTypes[key].name + '</a>';
+          if($S.contentTypes[key].layout && $S.contentTypes[key].layout.length) {
+            html2 += '<a href=\'javascript:$S.API.createInline($S.contentTypes[' + key + '])\'>Inline ' + $S.contentTypes[key].name + '</a>';
+          }
         }
       }
     
@@ -49,10 +52,20 @@ document.addEventListener('DOMContentLoaded', function () {
         event.preventDefault();
         $S.API.create($(this).serialize());
       });
-
-      msg();
+      $slot.show();
     }
 
+    function isCompoundType(type) {
+        var len = $S.contentTypes.length;
+        while(len--) {
+            if($S.contentTypes[len].name.toLowerCase() === type.toLowerCase()) {
+                return true;
+            }    
+        }
+
+        return false;
+    }
+    var inputTypes = ['text', 'textarea', 'checkbox', 'datetime', 'date', 'email', 'url'];
     function buildForm(type, fileName) {
       var key,
           obj,
@@ -61,12 +74,23 @@ document.addEventListener('DOMContentLoaded', function () {
           html = '';
 
       function buildInput(type, id, name) {
+          type = type.toLowerCase();
+          if(type === 'image' || type === 'video' || type === 'movie' || type === 'file') {
+            type = 'media';
+          }
+          if(isCompoundType(type)) {
+            return '<button>Choose</button>';
+          }
+          if(inputTypes.indexOf(type) === -1) {
+            console.log("Saasy doesn't know how to draw an input of type=" + type + " - using type=text as default");
+            type = 'text';
+          }
           switch (type) {
-          case 'textarea':
+            case 'textarea':
               return '<textarea id="' + id + '" name="' + name + '"></textarea>';
-          case 'image':
+            case 'media':
               return '<input id="' + id + '" name="' + name + '" type="file">';
-          default:
+            default:
               return '<input id="' + id + '" name="' + name + '" type="' + type + '">';
           }
       }
@@ -82,7 +106,7 @@ document.addEventListener('DOMContentLoaded', function () {
                   }
               }
               //Content isn't stored in the meta
-              result.meta.Content = result.Content;
+              result.meta.content = result.content;
           });
       }
 
@@ -146,7 +170,7 @@ document.addEventListener('DOMContentLoaded', function () {
             });
         },
         createInline: function (type) {
-            var data = 'Filename=new ' + type.name.toLowerCase() + '&type=' + type.type + '&Content=__loremIpsum&title=New ' + type.name;
+            var data = 'filename=new ' + type.name.toLowerCase() + '&type=' + type.type + '&content=__loremIpsum&title=New ' + type.name;
             if (type.layout) {
                 data += '&layout=' + (Array.isArray(type.layout) ? type.layout[0] : type.layout);
             }

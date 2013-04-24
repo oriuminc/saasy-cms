@@ -9,7 +9,7 @@
         "type": "blog",
         "layout": ["blog", "data"],
         "fields": { 
-            "Featured Image": "image",
+            "Featured Image": "media",
             "Authored Date": "date" ,
             "Author": "person" 
         },
