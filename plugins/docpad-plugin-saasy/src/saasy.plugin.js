@@ -19,6 +19,7 @@ module.exports = function(BasePlugin) {
       saasyInjection,
       saasyDependencies = '<script src="/ckeditor/ckeditor.js"></script><script src="/saasy.js"></script><script src="/angular.js"></script><script src="/admin.js"></script>',
       collections = {},
+      cheerio = require('cheerio'),
       gitpad = require('gitpad'),
       ncp = require('ncp'),
       fs = require('fs'),
@@ -94,7 +95,7 @@ module.exports = function(BasePlugin) {
 
     // Build the contents of a file to be saved as a string
    function fileBuilder(req, layout) {
-    var key,
+      var key,
         loremIpsum = 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Quisque aliquam est convallis nibh vestibulum lacinia. Vestibulum dolor arcu, vulputate ut molestie sit amet, laoreet vitae mi. Suspendisse venenatis, quam at lacinia luctus, libero turpis molestie arcu, sed feugiat leo risus ac quam. Donec vel neque id tortor lacinia viverra. Pellentesque mollis justo purus. Cras quis tortor sed nibh fringilla gravida vitae eu diam. Ut erat elit, volutpat sed eleifend non, hendrerit vel tortor. Etiam facilisis sollicitudin venenatis. Morbi convallis tincidunt ligula, id tempor metus eleifend eu. Integer a risus ipsum, eu congue magna.'
         toReturn = '---\n';
 
@@ -108,7 +109,7 @@ module.exports = function(BasePlugin) {
         }
 
         return toReturn += '---\n\n' + (req.body.content ? req.body.content.replace('__loremIpsum', loremIpsum) : '');
-      }
+    }
 
     function getContentTypes(cb) {
         var configPath = config.rootPath + '/saasy.config.json.new';
@@ -131,7 +132,9 @@ module.exports = function(BasePlugin) {
       docpad = opts.docpad;
       config = opts.docpad.config;
       
-      // Extend the template functions
+      /*
+        Extend the template functions
+      */
       
       // This function will find all documents in a given curated list and sort them
       // as specified by the curated list. We will also trim to a maxlength if specified
@@ -165,7 +168,7 @@ module.exports = function(BasePlugin) {
         return sortAndTrim(collection.findAll({type: {$ne: 'generated'}, relativeBase: {$in: curation}}));
       };
 
-      //Escape HTML for use in JSON
+      // Escape HTML for use in JSON
       config.templateData.escapeForJSON = function (str) {
             return !str ? '' : 
                     str.replace(/[\\]/g, '\\\\')
@@ -177,6 +180,11 @@ module.exports = function(BasePlugin) {
                        .replace(/[\r]/g, '\\r')
                        .replace(/[\t]/g, '\\t');
       };
+
+      // Automatically wraps contents for inline editing
+      /*config.templateData.editable = function (key) {
+        return "<div style='inline-block' contenteditable='false'>"+ +"</div>"
+      };*/
 
       //this creates a document via the file system, synchronously
       //used for generating documents during the docpadready event (which doesn't wait for a callback, so we gotta block)
@@ -264,21 +272,21 @@ module.exports = function(BasePlugin) {
       initGitPad();
     };
 
-    /* we may be able to use this to force docpad to generate everythingn */ 
+    /* we may be able to use this to force docpad to generate everything */ 
     Saasy.prototype.generateBefore = function (opts) {
         //opts.reset = true;
         //console.log(arguments);
     };
 
 
-    // Copy the ckeditor files over to the out directory
+    // Copy the script files over to the out directory
     Saasy.prototype.generateAfter = function(opts, next) {
       fs.exists(config.outPath + '/ckeditor', function(exists){
         if (!exists) {
           ncp(__dirname + '/ckeditor', config.outPath + '/ckeditor', function(err){
-          if (err) {
-            return console.log(err);
-          }
+            if (err) {
+              return console.log(err);
+            }
         });
         }
       });
@@ -286,10 +294,10 @@ module.exports = function(BasePlugin) {
       fs.exists(config.outPath + '/angular.js', function(exists){
         if (!exists) {
           ncp(__dirname + '/angular.js', config.outPath + '/angular.js', function(err){
-          if (err) {
-            return console.log(err);
-          }
-        });
+            if (err) {
+              return console.log(err);
+            }
+          });
         }
       });
 
@@ -298,22 +306,27 @@ module.exports = function(BasePlugin) {
           return console.log(err);
         }
       });
+
       ncp(__dirname + '/admin.js', config.outPath + '/admin.js', function(err) {
         if (err) {
           return console.log(err);
         }
       });
       next();
-    }
+    };
 
+   Saasy.prototype.render = function(opts) {
+      // console.log(opts.outExtension);
+      // if (opts.inExtension.toLowerCase() === 'eco' && opts.file.get('url').split('.').pop().toLowerCase() === 'html') {
+      //   opts.content = opts.content.replace(/<%[=|-]\s?(@content|@document\..+)\s?%>/g, '<div style="display: inline" contenteditable="false">$1</div>');
+      // }
+    };
 
     // Inject our CMS front end to the server 'out' files
     Saasy.prototype.renderDocument = function(opts, next) {
       var file = opts.file,
           injectionPoint = '<body>';
 
-      // enable inline editing for all 'article' element for now
-      
       function injectJs() {
         opts.content = opts.content.replace('</head>', saasyDependencies + '</head>').replace('<body>', '<body>' + saasyInjection);
         next();
@@ -399,7 +412,7 @@ module.exports = function(BasePlugin) {
           }); 
         }
         cbFail();
-      }
+      };
 
       // Deletes a document in the DOCPATH documents folder
       function fileDeleter(req, cbSuccess, cbFail) {
@@ -487,27 +500,58 @@ module.exports = function(BasePlugin) {
         });
       });
       
-      //Get a Document 
+      // Get a Document 
       server.get('/saasy/document/:type?/:filename?', function(req, res) {
-        if(req.params.type && req.params.filename) {
-            console.log(JSON.stringify(docpad.getFile({type: req.params.type, basename: req.params.filename})));
-            res.send(docpad.getFile({type: req.params.type, basename: req.params.filename}));
-        } else if (req.params.type) {
-            var filter = {},
-                sort = {};
-            for(key in req.query) {
-                if(req.query.hasOwnProperty(key)) {
-                    filter[key] = {$in:req.query[key].split(',')};
-                }
-            }
-            sort[req.query.sort || 'date'] = req.query.sortOrder || -1;
-            res.send(docpad.getCollection(req.params.type).findAll(filter, sort));
-        } else {
-            res.send(docpad.getFiles({}));
-        }  
-    });
 
-    };
+        // A helper function that takes a docpad file and output an object with desired fields from the file
+        function fetchFields(file) {
+          var data = { meta: file.meta, content: file.attributes.content };
+          console.log(req.query.af);
+          for (var i = 0; req.query.af && i<req.query.af.length; i++) {
+            var field = req.query.af[i];
+            data[field] = file.attributes[field];
+          }
+          return data;
+        }
+
+        // If type and filename are both specified, send specific file
+        if(req.params.type && req.params.filename) {
+          var file = docpad.getFile({type: req.params.type, basename: req.params.filename});
+          res.send(fetchFields(file));
+
+        // If only type specified, send everthing in that type
+        } else if (req.params.type) {
+          var filter = {},
+              sort = {};
+          for(key in req.query) {
+            if(req.query.hasOwnProperty(key)) {
+              filter[key] = {$in:req.query[key].split(',')};
+            }
+          }
+
+          sort[req.query.sort || 'date'] = req.query.sortOrder || -1;
+          var collection = docpad.getCollection(req.params.type).findAll(filter, sort);
+          var dataArray = [];
+          for (var i=0; i<collection.models.length; i++) {
+            dataArray.push(fetchFields(collection.at(i)));
+          }
+
+          res.send(dataArray);
+
+        // If nothing specified, send all files (this includes the layout files!!)
+        } else {
+          var collection = docpad.getFiles({});
+          var dataArray = [];
+          var dataArray = [];
+          for (var i=0; i<collection.models.length; i++) {
+            dataArray.push(fetchFields(collection.at(i)));
+          }
+
+          res.send(dataArray);
+        }
+      });
+
+    }; 
    
     /* Add Support for Multiple Layouts per Document */
     var toRender;
@@ -560,7 +604,15 @@ module.exports = function(BasePlugin) {
                }
                addDoc(model, additionalLayouts); 
             }
+
+            if (model.get('type')) {
+              model.set('title', '{editable}'+model.get('title')+'{/editable}');
+              model.set('content', '{editable}'+model.get('content')+'{/editable}');
+            }
+
+
         });
+
         if (!count) {
           next();
         }

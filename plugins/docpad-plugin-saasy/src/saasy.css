@@ -23,9 +23,6 @@
 #saasy a:first-of-type {
     margin-top:0;
 }
-#saasy .edit-menu {
-    display:none;
-}
 #saasy .saasy-msg {
     position:absolute;
     right:0;

@@ -91,7 +91,7 @@
         <% end %>
 	</header>
     
-    <section>
+    <section data-saasy-editable>
 		<%- @content %>
     </section>
 

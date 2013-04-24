@@ -35,8 +35,10 @@ document.addEventListener('DOMContentLoaded', function () {
     function init() {
       var key,
         html = '',
-        html2 = '';
+        html2 = '',
+        $editableArea = $('*[data-saasy-editable]');
 
+      $editableArea.html($editableArea.html().replace(/{editable}(.*){\/editable}/g, '<div style="display:inline;" id="editable" contenteditable="false">$1</div>'));
       for (key in $S.contentTypes) {
         if ($S.contentTypes.hasOwnProperty(key)) {
           html += '<a href=\'javascript:$S.API.createForm($S.contentTypes[' + key + '])\'>Form ' + $S.contentTypes[key].name + '</a>';
@@ -52,6 +54,7 @@ document.addEventListener('DOMContentLoaded', function () {
         event.preventDefault();
         $S.API.create($(this).serialize());
       });
+      
       $slot.show();
     }
 
@@ -205,29 +208,29 @@ function enableInlineAll() {
 
 // Save edited content
 function saveAll() {
-  $('[contenteditable="true"]').attr("contenteditable", "false");
   $('.edit-page').show();
   $('.save-page').hide();
   $('.exit-edit').hide();
 
   console.log(CKEDITOR.instances);
   if (CKEDITOR.instances) {
-    for(name in CKEDITOR.instances){
+    for (name in CKEDITOR.instances){
       CKEDITOR.instances[name].destroy();
     }
   }
+  $('[contenteditable="true"]').attr("contenteditable", "false");
 }
 
 // Exit edit mode (without saving)
 function exitEdit() {
-  $('[contenteditable="true"]').attr("contenteditable", "false");
   $('.edit-page').show();
   $('.save-page').hide();
   $('.exit-edit').hide();
 
   if (CKEDITOR.instances) {
-    for(name in CKEDITOR.instances){
+    for (name in CKEDITOR.instances){
       CKEDITOR.instances[name].destroy();
     }
   }
+  $('[contenteditable="true"]').attr("contenteditable", "false");
 }
