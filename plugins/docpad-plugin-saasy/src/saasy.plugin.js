@@ -523,8 +523,8 @@ module.exports = function(BasePlugin) {
           var filter = {},
               sort = {};
           for(key in req.query) {
-            if(req.query.hasOwnProperty(key)) {
-              filter[key] = {$in:req.query[key].split(',')};
+            if(req.query.hasOwnProperty(key) && typeof req.query[key] === 'string') {
+              filter[key] = {$in:req.query[key].trim().split(',')};
             }
           }
 
@@ -539,7 +539,7 @@ module.exports = function(BasePlugin) {
 
         // If nothing specified, send all files (this includes the layout files!!)
         } else {
-          var collection = docpad.getFiles({});
+          var collection = docpad.getCollection('documents');
           var dataArray = [];
           var dataArray = [];
           for (var i=0; i<collection.models.length; i++) {
