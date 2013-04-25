@@ -36,7 +36,7 @@ document.addEventListener('DOMContentLoaded', function () {
         html = '',
         html2 = '',
         $body = $('body'),
-        $editableAreas = $body.find('[data-saasy-editable]'),
+        $editableAreas = $body.find('[data-saasy-editable], [data-saasy-editable] *'),
         $everythingElse = $('*'),
         inlineOpenRegex = /{editable}/,
         inlineCloseRegex = /{\/editable}/,
