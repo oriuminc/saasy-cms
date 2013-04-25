@@ -56,7 +56,7 @@
                     <a href="<%= page.url.replace('index.html', '') %>">
 	                    <%= page.title %>
                     </a>
-                <% end %> 
+                <% end %>
             <% end %>
         </nav>
 
