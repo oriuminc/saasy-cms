@@ -500,18 +500,57 @@ module.exports = function(BasePlugin) {
         });
       });
       
-      // Get a Document 
+      /*
+        Get a Document 
+        Permitted get arguments:
+        - af: an array of additional fields to fetch for each docpad file. If not specified will only return meta, content, create and modified time.
+        - filter: a json object used as filter, can contain string or arrays. If not specified will return everything.
+        - sort: a field used to sort the list of result. If not specified will sort by date decrementally.
+        - sortOrder: an order used to sort, default -1.
+      */
       server.get('/saasy/document/:type?/:filename?', function(req, res) {
 
         // A helper function that takes a docpad file and output an object with desired fields from the file
         function fetchFields(file) {
-          var data = { meta: file.meta, content: file.attributes.content };
+          var data = { meta: file.meta, content: file.attributes.content, attributes: file.attributes };
           for (var i = 0; req.query.af && i<req.query.af.length; i++) {
             var field = req.query.af[i];
             data[field] = file.attributes[field];
           }
           return data;
         }
+
+
+        function getFilteredCollection(type) {
+          var filter = {},
+              sort = {},
+              filterObject = JSON.parse(req.query.filter),
+              collection;
+
+          // Be ware: the filter is applied on the attributes of the file, not the META which is what the user is getting!
+          for(key in filterObject) {
+            if(filterObject.hasOwnProperty(key)) {
+              if (Object.prototype.toString.call(filterObject[key]) === '[object Array]') {
+                filter[key] = {$in:filterObject[key]};
+              } else if (typeof filterObject[key] === 'string') {
+                filter[key] = filterObject[key];
+              }
+            }
+          }
+
+          sort[req.query.sort || 'date'] = req.query.sortOrder || -1;
+
+          if (type) {
+            collection = docpad.getCollection(type).findAll(filter, sort);
+          } else {
+            filter.type = {$ne: 'generated'};
+            console.log(filter);
+            collection = docpad.getCollection('documents').findAll(filter, sort);
+            // console.log(collection);
+          }
+          return collection;
+        }
+
 
         // If type and filename are both specified, send specific file
         if(req.params.type && req.params.filename) {
@@ -520,16 +559,7 @@ module.exports = function(BasePlugin) {
 
         // If only type specified, send everthing in that type
         } else if (req.params.type) {
-          var filter = {},
-              sort = {};
-          for(key in req.query) {
-            if(req.query.hasOwnProperty(key)) {
-              filter[key] = {$in:req.query[key].split(',')};
-            }
-          }
-
-          sort[req.query.sort || 'date'] = req.query.sortOrder || -1;
-          var collection = docpad.getCollection(req.params.type).findAll(filter, sort);
+          var collection = getFilteredCollection(req.params.type);
           var dataArray = [];
           for (var i=0; i<collection.models.length; i++) {
             dataArray.push(fetchFields(collection.at(i)));
@@ -539,8 +569,7 @@ module.exports = function(BasePlugin) {
 
         // If nothing specified, send all files (this includes the layout files!!)
         } else {
-          var collection = docpad.getFiles({});
-          var dataArray = [];
+          var collection = getFilteredCollection(req.params.type);
           var dataArray = [];
           for (var i=0; i<collection.models.length; i++) {
             dataArray.push(fetchFields(collection.at(i)));
@@ -570,7 +599,8 @@ module.exports = function(BasePlugin) {
                 document.id = name;
                 document.set('basename', name);
                 document.set('layout', layout);
-                document.setMeta('type', 'generated');
+                document.set('type', 'generated');
+                // document.setMETA('type', 'generated');
                 document.contextualize({}, function () {
                     toRender.push(document);
                     if(!--count) {
@@ -605,8 +635,10 @@ module.exports = function(BasePlugin) {
             }
 
             if (model.get('type')) {
-              model.set('title', '{editable}'+model.get('title')+'{/editable}');
-              model.set('content', '{editable}'+model.get('content')+'{/editable}');
+              model.set('editable', {
+                title: '{editable}'+ model.get('title') + '{/editable}',
+                content: '{editable}'+ model.get('content') + '{/editable}'
+              })
             }
 
 
