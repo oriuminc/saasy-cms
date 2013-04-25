@@ -7,7 +7,6 @@
     top:0;
     padding:10px;
     overflow:auto;
-    display:none;
 }
 #saasy .form-holder > *  {
     display:block;
@@ -54,8 +53,9 @@
 body {
     border-left:225px solid transparent;
     box-sizing:border-box;
+    display:none;
 }
-body:before {
+html:before {
    position:absolute;
    left:30px;
    top:30px;

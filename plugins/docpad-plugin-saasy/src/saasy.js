@@ -2,7 +2,6 @@
 /*jslint plusplus: true*/
 
 document.addEventListener('DOMContentLoaded', function () {
-  
   'use strict';
   var generationLocation,
       $slot = $('#saasy'),
@@ -36,9 +35,43 @@ document.addEventListener('DOMContentLoaded', function () {
       var key,
         html = '',
         html2 = '',
-        $editableArea = $('*[data-saasy-editable]');
+        $body = $('body'),
+        $editableAreas = $body.find('[data-saasy-editable]'),
+        $everythingElse = $('*'),
+        inlineOpenRegex = /{editable}/,
+        inlineCloseRegex = /{\/editable}/,
+        inlineRegex = /{editable}(.*){\/editable}/,
+        inlineReplacement = '<div style=\'display:inline\' contenteditable=\'false\' />';
+   
+      function replaceContentHolders(elems, notEditable) {
+          var $elems = elems.contents().filter(function () {
+              return this.nodeType === Node.TEXT_NODE && this.data.match(inlineOpenRegex);
+            }),
+            len = $elems.length;
+        while(len--) {
+            if($elems[len].data.match(inlineRegex)) {
+              $elems[len].data = $elems[len].data.replace(inlineRegex, '$1');
+            } else {
+              $elems[len].data = $elems[len].data.replace(inlineOpenRegex, '');
+              $elems[len] = $($elems[len]);
+              if(!notEditable) {
+                $elems[len].add($elems[len].siblings()).wrapAll(inlineReplacement);
+                return $elems[len].parent().parent().contents().filter(function() {
+                    return this.nodeType === Node.TEXT_NODE; 
+                }).first().remove();
+              } 
+              $elems[len].parent().contents().last().remove();
+            }
+        }
+        if (!notEditable) {
+          $elems.wrap(inlineReplacement);
+        }
+      }
+      
+      replaceContentHolders($editableAreas, false);
+      replaceContentHolders($everythingElse, true);
+      $body.show();
 
-      $editableArea.html($editableArea.html().replace(/{editable}(.*){\/editable}/g, '<div style="display:inline;" id="editable" contenteditable="false">$1</div>'));
       for (key in $S.contentTypes) {
         if ($S.contentTypes.hasOwnProperty(key)) {
           html += '<a href=\'javascript:$S.API.createForm($S.contentTypes[' + key + '])\'>Form ' + $S.contentTypes[key].name + '</a>';
@@ -49,13 +82,10 @@ document.addEventListener('DOMContentLoaded', function () {
       }
     
       $menuSlot.html(html + '<br>' + html2);
-
       $formSlot.on('submit', function (event) {
         event.preventDefault();
         $S.API.create($(this).serialize());
       });
-      
-      $slot.show();
     }
 
     function isCompoundType(type) {
