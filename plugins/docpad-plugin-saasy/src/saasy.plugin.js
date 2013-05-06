@@ -631,6 +631,7 @@ module.exports = function(BasePlugin) {
             }
 
             if (model.get('type')) {
+              var meta = model.get('meta');
               model.set('editable', {
                 title: '{editable}'+ model.get('title') + '{/editable}',
                 content: '{editable}'+ model.get('content') + '{/editable}'
