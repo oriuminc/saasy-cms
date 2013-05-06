@@ -7,7 +7,8 @@ layout: 'default'
     <% if @document.$Author: %>
        <%= @document.$Author.content %>
     <% end %>
-    <%- @include('person', @document.Author) %>
+    
+    <%- @document.editable["Authored Date"] %>
     <%- @document.editable.content %>
 </article>
 
