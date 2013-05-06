@@ -7,20 +7,25 @@
   <% end %>
 <% end %>
 
-
-{"title": "<%= @document.title %>",
-"content":"<%- @escapeForJSON (content) %>",
+<%keys = Object.keys(@document.meta) %>
+{
+  "content": "<%- @escapeForJSON(content) %>"
+  <%for key,idx in keys: %>
+      ,"<%=key%>":"<%- @escapeForJSON(@document.meta[key]) %>"
+  <% end %>
 <%if @document.pagedCollection: %>
-    "documents": [
+    ,"documents": [
     <% collection = @document.pagedCollection %>
     <% posts = @getCollection(collection) %>
     <% for i in [@document.page.startIdx...@document.page.endIdx]: %>
-          <% document = posts.at(i).toJSON() %>
-              {"title":"<%=document.title%>",
-               "url": "<%= document.url %>",
-              "date":"<%= document.date.toLocaleDateString() %>",
-              "content":"<%- @escapeForJSON (document.contentRenderedWithoutLayouts) %>"
-            }<%if i + 1 != @document.page.endIdx: %>,<% end %>
+      <% document = posts.at(i).toJSON() %>
+      <% keys = Object.keys(document.meta) %>
+      { 
+        "content": "<%- @escapeForJSON(document.content) %>"
+        <% for key, idx in keys: %>
+          ,"<%=key%>":"<%- document.meta[key] %>"
+        <% end %>
+      }<%if i + 1 != @document.page.endIdx: %>,<% end %>
     <% end %>
     ],
     "pageNum": <%= @document.page.number + 1 %>,
