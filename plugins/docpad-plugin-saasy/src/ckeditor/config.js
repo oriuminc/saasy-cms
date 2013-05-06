@@ -10,8 +10,9 @@ CKEDITOR.editorConfig = function( config ) {
 
 	// The toolbar groups arrangement, optimized for two toolbar rows.
 	config.toolbarGroups = [
-		{ name: 'clipboard',   groups: [ 'clipboard', 'undo' ] },
+		{ name: 'history',   groups: [ 'undo' ] },
 		{ name: 'editing',     groups: [ 'find', 'selection', 'spellchecker' ] },
+		{ name: 'paragraph',   groups: [ 'list', 'indent', 'blocks', 'align' ] },
 		{ name: 'links' },
 		{ name: 'insert' },
 		{ name: 'forms' },
@@ -20,10 +21,9 @@ CKEDITOR.editorConfig = function( config ) {
 		{ name: 'others' },
 		'/',
 		{ name: 'basicstyles', groups: [ 'basicstyles', 'cleanup' ] },
-		{ name: 'paragraph',   groups: [ 'list', 'indent', 'blocks', 'align' ] },
+		{ name: 'font', groups: [ 'font' ] },
 		{ name: 'styles' },
 		{ name: 'colors' },
-		{ name: 'about' }
 	];
 
 	// Remove some buttons, provided by the standard plugins, which we don't
@@ -35,4 +35,7 @@ CKEDITOR.editorConfig = function( config ) {
 
 	// Make dialogs simpler.
 	config.removeDialogTabs = 'image:advanced;link:advanced';
+
+	// Plugins
+	config.extraPlugins = 'font';
 };

@@ -44,25 +44,28 @@ document.addEventListener('DOMContentLoaded', function () {
         inlineReplacement = '<div style=\'display:inline\' contenteditable=\'false\' />';
    
       function replaceContentHolders(elems, notEditable) {
-          var $elems = elems.contents().filter(function () {
-              return this.nodeType === Node.TEXT_NODE && this.data.match(inlineOpenRegex);
-            }),
-            len = $elems.length;
+        var $elems = elems.contents().filter(function () {
+          return this.nodeType === Node.TEXT_NODE && this.data.match(inlineOpenRegex);
+        }),
+        len = $elems.length;
+
         while(len--) {
-            if($elems[len].data.match(inlineRegex)) {
-              $elems[len].data = $elems[len].data.replace(inlineRegex, '$1');
-            } else {
-              $elems[len].data = $elems[len].data.replace(inlineOpenRegex, '');
-              $elems[len] = $($elems[len]);
-              if(!notEditable) {
-                $elems[len].add($elems[len].siblings()).wrapAll(inlineReplacement);
-                return $elems[len].parent().parent().contents().filter(function() {
-                    return this.nodeType === Node.TEXT_NODE; 
-                }).first().remove();
-              } 
-              $elems[len].parent().contents().last().remove();
+          if($elems[len].data.match(inlineRegex)) {
+            $elems[len].data = $elems[len].data.replace(inlineRegex, '$1');
+
+          } else {
+            $elems[len].data = $elems[len].data.replace(inlineOpenRegex, '');
+            $elems[len] = $($elems[len]);
+            if(!notEditable) {
+              $elems[len].add($elems[len].siblings()).wrapAll(inlineReplacement);
+              return $elems[len].parent().parent().contents().filter(function() {
+                return this.nodeType === Node.TEXT_NODE;
+              }).first().remove();
             }
+            $elems[len].parent().contents().last().remove();
+          }
         }
+
         if (!notEditable) {
           $elems.wrap(inlineReplacement);
         }
@@ -218,6 +221,7 @@ document.addEventListener('DOMContentLoaded', function () {
     };
     
     }());
+
 });
 
 
@@ -238,17 +242,20 @@ function enableInlineAll() {
 
 // Save edited content
 function saveAll() {
+  // Transform the page, get rid of all the inline editing panels and stuffs
   $('.edit-page').show();
   $('.save-page').hide();
   $('.exit-edit').hide();
-
-  console.log(CKEDITOR.instances);
-  if (CKEDITOR.instances) {
-    for (name in CKEDITOR.instances){
+  for (name in CKEDITOR.instances){
+    if (CKEDITOR.instances.hasOwnProperty(name))
       CKEDITOR.instances[name].destroy();
-    }
   }
   $('[contenteditable="true"]').attr("contenteditable", "false");
+
+  // Grab file name from url, use REST api to update file
+  var filename = document.URL.split('/').pop();
+  console.log(filename);
+
 }
 
 // Exit edit mode (without saving)
@@ -257,10 +264,10 @@ function exitEdit() {
   $('.save-page').hide();
   $('.exit-edit').hide();
 
-  if (CKEDITOR.instances) {
-    for (name in CKEDITOR.instances){
+  for (name in CKEDITOR.instances){
+    if (CKEDITOR.instances.hasOwnProperty(name))
       CKEDITOR.instances[name].destroy();
-    }
   }
+
   $('[contenteditable="true"]').attr("contenteditable", "false");
 }
