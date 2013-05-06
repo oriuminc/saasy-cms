@@ -281,13 +281,9 @@ module.exports = function(BasePlugin) {
 
     // Copy the script files over to the out directory
     Saasy.prototype.generateAfter = function(opts, next) {
-      fs.exists(config.outPath + '/ckeditor', function(exists){
-        if (!exists) {
-          ncp(__dirname + '/ckeditor', config.outPath + '/ckeditor', function(err){
-            if (err) {
-              return console.log(err);
-            }
-        });
+      ncp(__dirname + '/ckeditor', config.outPath + '/ckeditor', function(err){
+        if (err) {
+          return console.log(err);
         }
       });
 
@@ -627,11 +623,11 @@ module.exports = function(BasePlugin) {
 
             var additionalLayouts = getAdditionalLayouts(model.attributes.type || model.attributes.pagedCollection);
             if(additionalLayouts.length) {
-               if(model.get('isPaged')) {
-                 //paged documents are handled by the paged plugin
-                 return;
-               }
-               addDoc(model, additionalLayouts); 
+              if(model.get('isPaged')) {
+                //paged documents are handled by the paged plugin
+                return;
+              }
+              addDoc(model, additionalLayouts); 
             }
 
             if (model.get('type')) {
