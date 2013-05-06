@@ -19,7 +19,6 @@ module.exports = function(BasePlugin) {
       saasyInjection,
       saasyDependencies = '<script src="/ckeditor/ckeditor.js"></script><script src="/saasy.js"></script><script src="/angular.js"></script><script src="/admin.js"></script>',
       collections = {},
-      cheerio = require('cheerio'),
       gitpad = require('gitpad'),
       ncp = require('ncp'),
       fs = require('fs'),
@@ -171,7 +170,8 @@ module.exports = function(BasePlugin) {
       // Escape HTML for use in JSON
       config.templateData.escapeForJSON = function (str) {
             return !str ? '' : 
-                    str.replace(/[\\]/g, '\\\\')
+                    str.toString()
+                       .replace(/[\\]/g, '\\\\')
                        .replace(/[\"]/g, '\\\"')
                        .replace(/[\/]/g, '\\/')
                        .replace(/[\b]/g, '\\b')
@@ -324,7 +324,7 @@ module.exports = function(BasePlugin) {
           injectionPoint = '<body>';
 
       function injectJs() {
-        opts.content = opts.content.replace('</head>', saasyDependencies + '</head>').replace('<body>', '<body>' + saasyInjection);
+        opts.content = opts.content.replace('<body>', '<body>' + saasyInjection + saasyDependencies);
         next();
       }
       
@@ -507,6 +507,7 @@ module.exports = function(BasePlugin) {
       server.get('/saasy/document/:type?/:filename?', function(req, res) {
 
         // A helper function that takes a docpad file and output an object with desired fields from the file
+        var done = true;//false;
         function fetchFields(file) {
           var data = { meta: file.meta, content: file.attributes.content, attributes: file.attributes };
           for (var i = 0; req.query.af && i<req.query.af.length; i++) {
@@ -606,7 +607,6 @@ module.exports = function(BasePlugin) {
             });
           });
         }
-
         opts.collection.forEach(function(model) {
             var meta = model.getMeta().attributes,
                 key,
@@ -636,7 +636,6 @@ module.exports = function(BasePlugin) {
                 content: '{editable}'+ model.get('content') + '{/editable}'
               })
             }
-
 
         });
 

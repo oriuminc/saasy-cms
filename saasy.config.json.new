@@ -1,6 +1,6 @@
 {
     "globalFields": {
-        "Title": "text",
+        "title": "text",
         "tags": "textarea"
    }, 
    "types": [
