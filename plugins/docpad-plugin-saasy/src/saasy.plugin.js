@@ -235,6 +235,7 @@ module.exports = function(BasePlugin) {
             "filename": "text",
             "content": "textarea"
         };
+        config._globalFields = result.globalFields;
         //add saasy global fields and user specified global fields to all content types
         for(key in result.globalFields) {
             if(result.globalFields.hasOwnProperty(key)) {
@@ -607,18 +608,35 @@ module.exports = function(BasePlugin) {
             });
           });
         }
+
         opts.collection.forEach(function(model) {
             var meta = model.getMeta().attributes,
                 key,
                 contentType = getContentType(meta.type);
+
             if(contentType) {
-                //"expand" all compound data types
-                for(key in contentType.fields) {
-                    if(contentType.fields.hasOwnProperty(key) && getContentType(contentType.fields[key]) && meta[key]) {
-                        var obj = docpad.getCollection(contentType.fields[key]).findOne({ relativeBase:meta[key]});
-                        model.set('$' + key, docpad.getCollection(contentType.fields[key]).findOne({ relativeBase:meta[key]}).attributes);
-                    }
+              var editable = {content: "{editable key='content'}" + model.get('content') + "{/editable}"};
+              for(key in contentType.fields) {
+                if(contentType.fields.hasOwnProperty(key) && meta[key]) {
+                  //"expand" all compound data types
+                  if(getContentType(contentType.fields[key])) {
+                    var obj = docpad.getCollection(contentType.fields[key]).findOne({ relativeBase:meta[key]});
+                    model.set('$' + key, docpad.getCollection(contentType.fields[key]).findOne({ relativeBase:meta[key]}).attributes);
+                    //deal with editing compound types here
+
+                  } else {
+                    editable[key] = "{editable key='" + key + "'}" + meta[key] + "{/editable}";
+                  }
                 }
+              }
+
+              for (key in config._globalFields) {
+                if(config._globalFields.hasOwnProperty(key) && meta[key]) {
+                  editable[key] =  "{editable key='" + key + "'}" + meta[key] + "{/editable}";
+                }
+              }
+
+              model.set('editable', editable);
             }
 
             var additionalLayouts = getAdditionalLayouts(model.attributes.type || model.attributes.pagedCollection);
@@ -628,14 +646,6 @@ module.exports = function(BasePlugin) {
                 return;
               }
               addDoc(model, additionalLayouts); 
-            }
-
-            if (model.get('type')) {
-              var meta = model.get('meta');
-              model.set('editable', {
-                title: '{editable}'+ model.get('title') + '{/editable}',
-                content: '{editable}'+ model.get('content') + '{/editable}'
-              })
             }
 
         });
