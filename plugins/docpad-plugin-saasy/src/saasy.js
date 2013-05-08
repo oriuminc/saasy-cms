@@ -253,8 +253,36 @@ function saveAll() {
   $('[contenteditable="true"]').attr("contenteditable", "false");
 
   // Grab file name from url, use REST api to update file
-  var filename = document.URL.split('/').pop();
-  console.log(filename);
+  var urlTokens = document.URL.split('/');
+  var fileName = urlTokens.pop() + '.md';
+  var fileType = urlTokens.pop();
+  var model = { fileName: fileName, fileType: fileType, meta: {} };
+  $('[contenteditable="false"]').each(function() {
+    var key = this.data('key');
+    var content = this.html();
+    if (key !== 'content') {
+      model.meta[key] = content;
+
+    } else {
+      model.content = content;
+    }
+  });
+
+  console.log(fileName, model);
+
+  $.ajax({
+    url: '/saasy/edit',
+    type: 'POST',
+    data: model
+  }).done(function (result) {
+    if (result.fileName) {
+      generationLocation = result.fileName;
+    }
+
+    if (done) {
+      return done(result);
+    }
+  });
 
 }
 

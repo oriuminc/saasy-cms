@@ -1,0 +1,10 @@
+---
+content: stuff that rules
+cacheable: true
+type: footer
+copyright: 2010-08-31T01:35:05.785Z
+---
+
+<div> 
+    <%= @document.editable.content %> and other stuff too. <sup>&copy; <%= 1900 + new Date(@document.copyright).getYear() %></sup>
+</div>

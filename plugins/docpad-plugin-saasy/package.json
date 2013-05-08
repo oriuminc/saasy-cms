@@ -27,6 +27,9 @@
         "docpad": "6.x"
     },
     "dependencies": {
+        "cson": "x",
+        "yamljs": "x",
+        "ncp": ">=0.4.2"
     },
     "main": "./src/saasy.plugin.js"
 }
