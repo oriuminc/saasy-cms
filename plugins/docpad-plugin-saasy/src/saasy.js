@@ -25,54 +25,36 @@ document.addEventListener('DOMContentLoaded', function () {
 
   $S.API = (function () {
     if (typeof $ === 'undefined') {
-      throw 'You can\'t use Saasy without jQuery, please add it to your pages (for now, we\'ll deal with it later)...';
+      throw 'You can\'t use Saasy without jQuery, please add it to your pages (for now)...';
     }
 
     var $menuSlot = $('#saasy .menu-holder'),
-      $formSlot = $('#saasy #ct-form');
+        $formSlot = $('#saasy #ct-form');
 
     function init() {
-      var key,
-        html = '',
-        html2 = '',
-        $body = $('body'),
-        $editableAreas = $body.find('[data-saasy-editable], [data-saasy-editable] *'),
-        $everythingElse = $('*'),
-        inlineOpenRegex = /{editable}/,
-        inlineCloseRegex = /{\/editable}/,
-        inlineRegex = /{editable}(.*){\/editable}/,
-        inlineReplacement = '<div style=\'display:inline\' contenteditable=\'false\' />';
-   
-      function replaceContentHolders(elems, notEditable) {
-        var $elems = elems.contents().filter(function () {
-          return this.nodeType === Node.TEXT_NODE && this.data.match(inlineOpenRegex);
-        }),
-        len = $elems.length;
-
+        var key,
+            html = '',
+            html2 = '',
+            $body = $('body');
+ 
+          
+      function replaceEscapedContentHolders($node) {
+        var $elems = $('body *').contents().filter(function () {
+                return this.nodeType === Node.TEXT_NODE && this.data.match(/class='saasy-wrap'/);
+            }),
+            len = $elems.length,
+            wrap,
+            item;
         while(len--) {
-          if($elems[len].data.match(inlineRegex)) {
-            $elems[len].data = $elems[len].data.replace(inlineRegex, '$1');
-
-          } else {
-            $elems[len].data = $elems[len].data.replace(inlineOpenRegex, '');
-            $elems[len] = $($elems[len]);
-            if(!notEditable) {
-              $elems[len].add($elems[len].siblings()).wrapAll(inlineReplacement);
-              return $elems[len].parent().parent().contents().filter(function() {
-                return this.nodeType === Node.TEXT_NODE;
-              }).first().remove();
-            }
-            $elems[len].parent().contents().last().remove();
-          }
-        }
-
-        if (!notEditable) {
-          $elems.wrap(inlineReplacement);
+            wrap = $('<div>' + $elems[len].data + '</div>');
+            $($elems[len]).replaceWith(wrap);
+            item = wrap.find('div.saasy-wrap');
+            item.text(item.html());
+            wrap.contents().unwrap();
         }
       }
       
-      replaceContentHolders($editableAreas, false);
-      replaceContentHolders($everythingElse, true);
+      replaceEscapedContentHolders();
       $body.show();
 
       for (key in $S.contentTypes) {
@@ -101,9 +83,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
         return false;
     }
-    var inputTypes = ['text', 'textarea', 'checkbox', 'datetime', 'date', 'email', 'url'];
+    
     function buildForm(type, fileName) {
       var key,
+          inputTypes = ['text', 'textarea', 'checkbox', 'datetime', 'date', 'email', 'url'],
           obj,
           myId,
           myName,
