@@ -96,7 +96,7 @@
     </section>
 
     <footer>
-        Sweetest footer evar
+       <%-@partial('footer.html.eco')%>
     </footer>
 
 	<!-- jQuery -->
