@@ -615,7 +615,7 @@ module.exports = function(BasePlugin) {
                 contentType = getContentType(meta.type);
 
             if(contentType) {
-              var editable = {content: '<div class=\'saasy-wrap\' data-key=\'content\' contenteditable=\'false\'>'+ model.get('content') + ' </div>'};
+              var editable = {content: '<div class=\'saasy-wrap\' ng-model=\'content\' data-key=\'content\' contenteditable=\'false\'>'+ model.get('content') + ' </div>'};
               for(key in contentType.fields) {
                 if(contentType.fields.hasOwnProperty(key) && meta[key]) {
                   //"expand" all compound data types
@@ -624,14 +624,14 @@ module.exports = function(BasePlugin) {
                     model.set('$' + key, docpad.getCollection(contentType.fields[key]).findOne({ relativeBase:meta[key]}).attributes);
                     //deal with editing compound types here
                   } else {
-                    editable[key] = '<div class=\'saasy-wrap\' data-key=\'' + key + '\' contenteditable=\'false\'>'+ meta[key] + ' </div>';
+                    editable[key] = '<div class=\'saasy-wrap\' data-key=\'' + key + '\' ng-model=\'' + key + '\' contenteditable=\'false\'>'+ meta[key] + ' </div>';
                   }
                 }
               }
 
               for (key in config._globalFields) {
                 if(config._globalFields.hasOwnProperty(key) && meta[key]) {
-                  editable[key] = '<div class=\'saasy-wrap\' data-key=\'' + key + '\' contenteditable=\'false\'>'+ meta[key] + ' </div>';
+                  editable[key] = '<div class=\'saasy-wrap\' data-key=\'' + key + '\' ng-model=\'' + key + '\' contenteditable=\'false\'>'+ meta[key] + ' </div>';
                 }
               }
 
