@@ -10,6 +10,7 @@ layout: 'default'
   
     <%= @document["Authored Date"] %>
   
+
     <%- @document.editable["Authored Date"] %>
     in the middle
     <%= @document.editable.content %>
