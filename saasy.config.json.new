@@ -5,6 +5,21 @@
    }, 
    "types": [
     {
+        "name": "Partial",
+        "type": "partial",
+        "fields": {
+            "content": "textarea"
+        }
+    }, 
+    {
+        "name": "Footer",
+        "type": "footer",
+        "fields": {
+            "content": "textarea",
+            "copyright": "date"
+        }
+    },
+    {
         "name": "Blog Post",
         "type": "blog",
         "layout": ["blog", "data"],
