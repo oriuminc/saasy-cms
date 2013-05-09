@@ -96,7 +96,7 @@
     </section>
 
     <footer>
-        <%= @document.footer %>
+       <%-@partial('footer.html.eco')%>
     </footer>
 
 	<!-- jQuery -->
