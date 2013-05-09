@@ -7,7 +7,7 @@ layout: 'default'
     <% if @document.$Author: %>
        <%= @document.$Author.content %>
     <% end %>
-    
+
     <%- @document.editable["Authored Date"] %>
     <%- @document.editable.content %>
 </article>

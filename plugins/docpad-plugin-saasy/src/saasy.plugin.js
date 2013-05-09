@@ -118,67 +118,80 @@ module.exports = function(BasePlugin) {
       var 
         contentProcessing = 'meta',
         fileObject = {},
-        filePath = config.rootPath + '/src/contents/documents/' + req.body.fileType + '/' + req.body.fileName;
+        partialTypeRegex = /partial\/.*/
+        filePath,
+        model;
 
-      fs.readFile(filePath, function(err, data) {
-        if (err) {
-          console.log('Error reading file ' + filePath);
-          return;
+      for (filename in req.body.models) {
+        model = req.body.models[filename];
+
+        // File is a partial
+        if (partialTypeRegex.test(file.type)) {
+          filePath = config.rootPath + '/src/contents/partial/' + filename; 
+        } else {
+          filePath = config.rootPath + '/src/content/documents/' + model.type + '/' + filename;
         }
-        
-        // Parse document and construct the object
-        //  the following lines are grabbed and modified from docpad/out/lib/models/document.js line 95~133
-        var regex = /^\s*(([^\s\d\w])\2{2,})(?:\x20*([a-z]+))?([\s\S]*?)\1/;
-        var match = regex.exec(data);
-        var metaData = {};
-        data = "" + data; // Convert raw buffer into string
 
-        if (match) {
-          var seperator = match[1];
-          var parser = match[3] || 'yaml';
-          var header = match[4].trim();
-          var body = data.substring(match[0].length).trim();
+        fs.readFile(filePath, function(err, data) {
+          if (err) {
+            console.log('Error reading file ' + filePath);
+            return;
+          }
+          
+          // Parse document and construct the object
+          //  the following lines are grabbed and modified from docpad/out/lib/models/document.js line 95~133
+          var regex = /^\s*(([^\s\d\w])\2{2,})(?:\x20*([a-z]+))?([\s\S]*?)\1/;
+          var match = regex.exec(data);
+          var metaData = {};
+          data = "" + data; // Convert raw buffer into string
 
-          switch (parser) {
-            case 'cson':
-            case 'coffee':
-            case 'coffeescript':
-            case 'coffee-script':
-              metaData = cson.parseSync(header);
-              fileObject.meta = metaData;
-              break;
+          if (match) {
+            var seperator = match[1];
+            var parser = match[3] || 'yaml';
+            var header = match[4].trim();
+            var body = data.substring(match[0].length).trim();
 
-            case 'yaml':
-              metaData = yaml.parse(header);
-              fileObject.meta = metaData;
-              break;
+            switch (parser) {
+              case 'cson':
+              case 'coffee':
+              case 'coffeescript':
+              case 'coffee-script':
+                metaData = cson.parseSync(header);
+                fileObject.meta = metaData;
+                break;
 
-            default:
-              console.log("Unknown meta parser: " + parser);
-              return;
+              case 'yaml':
+                metaData = yaml.parse(header);
+                fileObject.meta = metaData;
+                break;
+
+              default:
+                console.log("Unknown meta parser: " + parser);
+                return;
+            }
+
+          } else {
+            body = data;
           }
 
-        } else {
-          body = data;
-        }
+          fileObject.content = body;
 
-        fileObject.content = body;
-
-        // Replace whatever needed to be edited with new content
-        if (req.body.meta) {
-          for (key in req.body.meta) {
-            if (req.body.meta.hasOwnProperty(key) && fileObject.meta.hasOwnProperty(key)) {
-              fileObject.meta[key] = req.body.meta[key];
+          // Replace whatever needed to be edited with new content
+          if (model.meta) {
+            for (key in model.meta) {
+              if (model.meta.hasOwnProperty(key) && fileObject.meta.hasOwnProperty(key)) {
+                fileObject.meta[key] = model.meta[key];
+              }
             }
           }
-        }
-        if (typeof req.body.content !== 'undefined') 
-          fileObject.content = req.body.content;
+          if (typeof model.content !== 'undefined') 
+            fileObject.content = model.content;
 
-        console.log(fileObject);
-        console.log(yaml.stringify(fileObject));
+          console.log(fileObject);
+          console.log(yaml.stringify(fileObject));
 
-      });
+        });
+      }
     }
 
     function getContentTypes(cb) {
