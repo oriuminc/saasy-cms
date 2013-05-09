@@ -22,6 +22,8 @@ module.exports = function(BasePlugin) {
       gitpad = require('gitpad'),
       ncp = require('ncp'),
       fs = require('fs'),
+      cson = require('cson'),
+      yaml = require('yamljs'),
       docpad,
       config;
 
@@ -93,21 +95,103 @@ module.exports = function(BasePlugin) {
     }
 
     // Build the contents of a file to be saved as a string
+    // TODO: fileBuilder now assumes the meta are of yaml format and does not handle arrays properly yet, use yamljs or cson
    function fileBuilder(req, layout) {
       var key,
         loremIpsum = 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Quisque aliquam est convallis nibh vestibulum lacinia. Vestibulum dolor arcu, vulputate ut molestie sit amet, laoreet vitae mi. Suspendisse venenatis, quam at lacinia luctus, libero turpis molestie arcu, sed feugiat leo risus ac quam. Donec vel neque id tortor lacinia viverra. Pellentesque mollis justo purus. Cras quis tortor sed nibh fringilla gravida vitae eu diam. Ut erat elit, volutpat sed eleifend non, hendrerit vel tortor. Etiam facilisis sollicitudin venenatis. Morbi convallis tincidunt ligula, id tempor metus eleifend eu. Integer a risus ipsum, eu congue magna.'
         toReturn = '---\n';
 
-        if(layout) {
-            req.body.layout = layout;
+      if(layout) {
+        req.body.layout = layout;
+      }
+      for (key in req.body) {
+        if (req.body.hasOwnProperty(key) && key !== 'content') {
+          toReturn += key + ': "' + req.body[key] + '"\n';
         }
-        for (key in req.body) {
-          if (req.body.hasOwnProperty(key) && key !== 'content') {
-            toReturn += key + ': "' + req.body[key] + '"\n';
-          }
+      }
+
+      return toReturn += '---\n\n' + (req.body.content ? req.body.content.replace('__loremIpsum', loremIpsum) : '');
+    }
+
+    // Read the file and return an object containing meta and contents of the file
+    function fileUpdater(req, cb) {
+      var 
+        contentProcessing = 'meta',
+        fileObject = {},
+        partialTypeRegex = /partial\/.*/
+        filePath,
+        model;
+
+      for (filename in req.body.models) {
+        model = req.body.models[filename];
+
+        // File is a partial
+        if (partialTypeRegex.test(file.type)) {
+          filePath = config.rootPath + '/src/contents/partial/' + filename; 
+        } else {
+          filePath = config.rootPath + '/src/content/documents/' + model.type + '/' + filename;
         }
 
-        return toReturn += '---\n\n' + (req.body.content ? req.body.content.replace('__loremIpsum', loremIpsum) : '');
+        fs.readFile(filePath, function(err, data) {
+          if (err) {
+            console.log('Error reading file ' + filePath);
+            return;
+          }
+          
+          // Parse document and construct the object
+          //  the following lines are grabbed and modified from docpad/out/lib/models/document.js line 95~133
+          var regex = /^\s*(([^\s\d\w])\2{2,})(?:\x20*([a-z]+))?([\s\S]*?)\1/;
+          var match = regex.exec(data);
+          var metaData = {};
+          data = "" + data; // Convert raw buffer into string
+
+          if (match) {
+            var seperator = match[1];
+            var parser = match[3] || 'yaml';
+            var header = match[4].trim();
+            var body = data.substring(match[0].length).trim();
+
+            switch (parser) {
+              case 'cson':
+              case 'coffee':
+              case 'coffeescript':
+              case 'coffee-script':
+                metaData = cson.parseSync(header);
+                fileObject.meta = metaData;
+                break;
+
+              case 'yaml':
+                metaData = yaml.parse(header);
+                fileObject.meta = metaData;
+                break;
+
+              default:
+                console.log("Unknown meta parser: " + parser);
+                return;
+            }
+
+          } else {
+            body = data;
+          }
+
+          fileObject.content = body;
+
+          // Replace whatever needed to be edited with new content
+          if (model.meta) {
+            for (key in model.meta) {
+              if (model.meta.hasOwnProperty(key) && fileObject.meta.hasOwnProperty(key)) {
+                fileObject.meta[key] = model.meta[key];
+              }
+            }
+          }
+          if (typeof model.content !== 'undefined') 
+            fileObject.content = model.content;
+
+          console.log(fileObject);
+          console.log(yaml.stringify(fileObject));
+
+        });
+      }
     }
 
     function getContentTypes(cb) {
@@ -382,7 +466,7 @@ module.exports = function(BasePlugin) {
           fs.writeFile(filePath, str, function (err) {
             if(err) {
               cbFail();
-              return console.log('couldnt write file at ' + filePath); 
+              return console.log('couldn\'t write file at ' + filePath); 
             }
             cbSuccess(filePath.replace(config.documentsPaths, '').replace('.md', ''));
           });
@@ -464,6 +548,7 @@ module.exports = function(BasePlugin) {
               console.log(err);
             });
           res.send(success(fileName));
+
         }, function () {
           res.send(fail);
         }); 
@@ -476,7 +561,8 @@ module.exports = function(BasePlugin) {
 
       // Edit a file
       server.post('/saasy/edit', function (req, res) {
-        save(req, res); 
+        fileUpdater(req);
+        res.send('success');
       });
       
       // Delete a file
@@ -646,7 +732,6 @@ module.exports = function(BasePlugin) {
               }
               addDoc(model, additionalLayouts); 
             }
-
         });
 
         if (!count) {

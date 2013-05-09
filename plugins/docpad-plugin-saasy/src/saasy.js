@@ -236,8 +236,62 @@ function saveAll() {
   $('[contenteditable="true"]').attr("contenteditable", "false");
 
   // Grab file name from url, use REST api to update file
-  var filename = document.URL.split('/').pop();
-  console.log(filename);
+  var urlTokens = document.URL.split('/');
+  var pageFileName = urlTokens.pop() + '.md';
+  var pageFileType = urlTokens.pop();
+  var models = {};
+  // models format:
+  // models = {
+  //   filenameA: {
+  //     type: 'type',
+  //     meta: { ... },
+  //     content: 'content'
+  //   },
+  //   filenameB: {
+  //     ...
+  //   }
+  // }
+
+  $('[contenteditable="false"]').each(function() {
+    var fileName = pageFileName,
+      fileType = pageFileType,
+      container = $(this).closest('.saasy-partial');
+
+    if (container.length > 0) {
+      fileName = container.data('filename');
+      fileType = container.data('type');
+    }
+
+    if (typeof models[fileName] === 'undefined') {
+      models[fileName] = { type: fileType, meta: {} };
+    }
+
+    var key = $(this).data('key');
+    var content = $(this).text();
+
+    // WARNING: Make the user aware that they should not use 'content' as a meta key!!
+    if (key !== 'content') {
+      models[fileName].meta[key] = content;
+
+    } else {
+      models[fileName].content = content;
+    }
+
+  });
+
+  // $.ajax({
+  //   url: '/saasy/edit',
+  //   type: 'POST',
+  //   data: model
+  // }).done(function (result) {
+  //   if (result.fileName) {
+  //     generationLocation = result.fileName;
+  //   }
+
+  //   if (done) {
+  //     return done(result);
+  //   }
+  // });
 
 }
 
