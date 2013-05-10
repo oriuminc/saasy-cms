@@ -1,5 +1,8 @@
 .DS_STORE
 .*.swo
 .*.swp
+.*.swl
+.*.swm
+.*.swn
 /out/*
 /src/contents/*
