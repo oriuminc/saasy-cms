@@ -5,17 +5,11 @@
    }, 
    "types": [
     {
-        "name": "Partial",
-        "type": "partial",
-        "fields": {
-            "content": "textarea"
-        }
-    }, 
-    {
         "name": "Footer",
         "type": "footer",
+        "partial": true,
         "fields": {
-            "content": "textarea",
+            "footerContent": "textarea",
             "copyright": "date"
         }
     },
