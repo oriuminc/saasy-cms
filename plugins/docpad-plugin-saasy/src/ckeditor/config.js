@@ -38,4 +38,8 @@ CKEDITOR.editorConfig = function( config ) {
 
 	// Plugins
 	config.extraPlugins = 'font';
+
+	// Enter mode
+	config.enterMode = CKEDITOR.ENTER_BR;
+	config.shiftEnterMode = CKEDITOR.ENTER_P;
 };
