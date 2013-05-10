@@ -2,14 +2,18 @@
 layout: 'default'
 ---
 
-<h1><%= @document.editable.title %></h1>
+<h1><%- @document.editable.title %> and me too</h1>
 <article>
     <% if @document.$Author: %>
        <%= @document.$Author.content %>
     <% end %>
+  
+    <%= @document["Authored Date"] %>
+  
 
     <%- @document.editable["Authored Date"] %>
-    <%- @document.editable.content %>
+    in the middle
+    <%= @document.editable.content %>
 </article>
 
 <aside>

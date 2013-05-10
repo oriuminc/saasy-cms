@@ -84,6 +84,9 @@ module.exports = function(BasePlugin) {
     }    
     
     function getContentType(type) {
+        if(type === 'page') {
+            return {};
+        }
         var len = config.contentTypes.length;
         while(len--) {
             if(type === config.contentTypes[len].type) {
@@ -195,10 +198,10 @@ module.exports = function(BasePlugin) {
             }
           }
 
-          console.log("\nFile model received:\n", model);
-          console.log("\nFile object constructed:\n", fileObject);
+          // console.log("\nFile model received:\n", model);
+          // console.log("\nFile object constructed:\n", fileObject);
           var fileContent = fileBuilder(fileObject);
-          console.log("\nFile generated:\n", fileContent);
+          // console.log("\nFile generated:\n", fileContent);
           fs.writeFileSync(filePath, fileContent);
 
         });
@@ -691,14 +694,19 @@ module.exports = function(BasePlugin) {
     }; 
    
     /* Add Support for Multiple Layouts per Document */
-    var toRender;
+    var toRender,
+        crypto = require('crypto');
     Saasy.prototype.renderBefore = function(opts, next) {
         var count = 0,
             interval,
             document;
 
         toRender = [];
-        
+
+        function makeHash(key) {
+            return 's.' + crypto.createHash('md5').update(key).digest("hex"); 
+        }
+
         function addDoc(model, additionalLayouts) {
           additionalLayouts.forEach(function(layout) {
             count++;
@@ -720,14 +728,12 @@ module.exports = function(BasePlugin) {
           });
         }
 
-        var i = 1;
         opts.collection.forEach(function(model) {
             var meta = model.getMeta().attributes,
                 key,
                 contentType = getContentType(meta.type);
-
             if(contentType) {
-              var editable = {content: '<div class=\'saasy-wrap\' data-key=\'content\' contenteditable=\'false\'>'+ model.get('content') + ' </div>'};
+              var editable = {content: '<div saasycontent class=\'saasy-wrap\' ng-model=\'' + makeHash(model.attributes.url  + '.content') + '\' data-key=\'content\' contenteditable=\'false\'>'+ model.get('content') + ' </div>'};
               for(key in contentType.fields) {
                 if(contentType.fields.hasOwnProperty(key) && meta[key]) {
                   //"expand" all compound data types
@@ -736,14 +742,14 @@ module.exports = function(BasePlugin) {
                     model.set('$' + key, docpad.getCollection(contentType.fields[key]).findOne({ relativeBase:meta[key]}).attributes);
                     //deal with editing compound types here
                   } else {
-                    editable[key] = '<div class=\'saasy-wrap\' data-key=\'' + key + '\' contenteditable=\'false\'>'+ meta[key] + ' </div>';
+                    editable[key] = '<div saasycontent class=\'saasy-wrap\' data-key=\'' + key + '\' ng-model=\'' + makeHash(model.attributes.url  + '.' + key) + '\' contenteditable=\'false\'>'+ meta[key] + ' </div>';
                   }
                 }
               }
 
               for (key in config._globalFields) {
                 if(config._globalFields.hasOwnProperty(key) && meta[key]) {
-                  editable[key] = '<div class=\'saasy-wrap\' data-key=\'' + key + '\' contenteditable=\'false\'>'+ meta[key] + ' </div>';
+                  editable[key] = '<div saasycontent class=\'saasy-wrap\' data-key=\'' + key + '\' ng-model=\'' + makeHash(model.attributes.url  + '.' + key) + '\' contenteditable=\'false\'>'+ meta[key] + ' </div>';
                 }
               }
 

@@ -58,7 +58,7 @@ document.addEventListener('DOMContentLoaded', function () {
       $body.show();
 
       for (key in $S.contentTypes) {
-        if ($S.contentTypes.hasOwnProperty(key)) {
+        if ($S.contentTypes.hasOwnProperty(key) && !$S.contentTypes.partial) {
           html += '<a href=\'javascript:$S.API.createForm($S.contentTypes[' + key + '])\'>Form ' + $S.contentTypes[key].name + '</a>';
           if($S.contentTypes[key].layout && $S.contentTypes[key].layout.length) {
             html2 += '<a href=\'javascript:$S.API.createInline($S.contentTypes[' + key + '])\'>Inline ' + $S.contentTypes[key].name + '</a>';
