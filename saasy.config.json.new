@@ -15,7 +15,7 @@
         "name": "Footer",
         "type": "footer",
         "fields": {
-            "content": "textarea",
+            "stuff": "textarea",
             "copyright": "date"
         }
     },

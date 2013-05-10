@@ -96,41 +96,49 @@ module.exports = function(BasePlugin) {
 
     // Build the contents of a file to be saved as a string
     // TODO: fileBuilder now assumes the meta are of yaml format and does not handle arrays properly yet, use yamljs or cson
-   function fileBuilder(req, layout) {
+   function fileBuilder(fileObject, layout, metaParser) {
       var key,
         loremIpsum = 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Quisque aliquam est convallis nibh vestibulum lacinia. Vestibulum dolor arcu, vulputate ut molestie sit amet, laoreet vitae mi. Suspendisse venenatis, quam at lacinia luctus, libero turpis molestie arcu, sed feugiat leo risus ac quam. Donec vel neque id tortor lacinia viverra. Pellentesque mollis justo purus. Cras quis tortor sed nibh fringilla gravida vitae eu diam. Ut erat elit, volutpat sed eleifend non, hendrerit vel tortor. Etiam facilisis sollicitudin venenatis. Morbi convallis tincidunt ligula, id tempor metus eleifend eu. Integer a risus ipsum, eu congue magna.'
         toReturn = '---\n';
 
       if(layout) {
-        req.body.layout = layout;
-      }
-      for (key in req.body) {
-        if (req.body.hasOwnProperty(key) && key !== 'content') {
-          toReturn += key + ': "' + req.body[key] + '"\n';
-        }
+        fileObject.layout = layout;
       }
 
-      return toReturn += '---\n\n' + (req.body.content ? req.body.content.replace('__loremIpsum', loremIpsum) : '');
+      var content = fileObject.content;
+      delete fileObject.content;
+
+      if (metaParser) {
+        switch (metaParser) {
+          case 'cson':
+            toReturn += cson.stringifySync(fileObject);
+            break;
+
+          case 'yaml':
+            toReturn += yaml.stringify(fileObject);
+            break;
+
+          default:
+            console.log("Unknown meta parser: " + metaParser + ". Using YAML as fallback.");
+            toReturn += yaml.stringify(fileObject);
+        }
+      } else {
+        toReturn += yaml.stringify(fileObject);
+      }
+
+      return toReturn += '---\n\n' + (content ? content.replace('__loremIpsum', loremIpsum) : '');
     }
 
     // Read the file and return an object containing meta and contents of the file
     function fileUpdater(req, cb) {
       var 
         contentProcessing = 'meta',
-        fileObject = {},
-        partialTypeRegex = /partial\/.*/
+        partialTypeRegex = /partial\/.*/,
         filePath,
         model;
 
-      for (filename in req.body.models) {
-        model = req.body.models[filename];
-
-        // File is a partial
-        if (partialTypeRegex.test(file.type)) {
-          filePath = config.rootPath + '/src/contents/partial/' + filename; 
-        } else {
-          filePath = config.rootPath + '/src/content/documents/' + model.type + '/' + filename;
-        }
+      var updateFile = function(filePath, model) {
+        var fileObject = {};
 
         fs.readFile(filePath, function(err, data) {
           if (err) {
@@ -157,12 +165,12 @@ module.exports = function(BasePlugin) {
               case 'coffeescript':
               case 'coffee-script':
                 metaData = cson.parseSync(header);
-                fileObject.meta = metaData;
+                fileObject = metaData;
                 break;
 
               case 'yaml':
                 metaData = yaml.parse(header);
-                fileObject.meta = metaData;
+                fileObject = metaData;
                 break;
 
               default:
@@ -177,20 +185,37 @@ module.exports = function(BasePlugin) {
           fileObject.content = body;
 
           // Replace whatever needed to be edited with new content
-          if (model.meta) {
-            for (key in model.meta) {
-              if (model.meta.hasOwnProperty(key) && fileObject.meta.hasOwnProperty(key)) {
-                fileObject.meta[key] = model.meta[key];
+          for (key in model) {
+            if (model.hasOwnProperty(key) && fileObject.hasOwnProperty(key)) {
+              if (key === 'type' && partialTypeRegex.test(model[key])) {
+                fileObject[key] = model[key].replace(/partial\//, "");
+              } else {
+                fileObject[key] = model[key];
               }
             }
           }
-          if (typeof model.content !== 'undefined') 
-            fileObject.content = model.content;
 
-          console.log(fileObject);
-          console.log(yaml.stringify(fileObject));
+          console.log("\nFile model received:\n", model);
+          console.log("\nFile object constructed:\n", fileObject);
+          var fileContent = fileBuilder(fileObject);
+          console.log("\nFile generated:\n", fileContent);
+          fs.writeFileSync(filePath, fileContent);
 
         });
+      }
+
+      console.log(req.body);
+      for (filename in req.body) {
+        model = req.body[filename];
+
+        // File is a partial
+        if (partialTypeRegex.test(model.type)) {
+          filePath = config.rootPath + '/src/contents/partials/' + filename; 
+        } else {
+          filePath = config.rootPath + '/src/contents/documents/' + model.type + '/' + filename;
+        }
+
+        updateFile(filePath, model);
       }
     }
 
@@ -288,17 +313,17 @@ module.exports = function(BasePlugin) {
             fileName = (category ? ('/category-' + category) : 'index') + (len ? ('-' + layouts[len]) : '') + '.html.md';
             if(! fs.existsSync(filePath + fileName)) {
                 title = type + (category ? ' | ' + category : ''); 
-                opts = { body: {  
+                opts = { 
                     pagedCollection: type,
                     isPaged: true,
                     pageSize: pageSize || 5,
                     title: title,
                     content: title
-                }};
+                };
                 if (category) {
-                    opts.body.category = category;
-                    opts.body.parentType = type;
-                    opts.body.pagedCollection = type + ',' + category;
+                    opts.category = category;
+                    opts.parentType = type;
+                    opts.pagedCollection = type + ',' + category;
                 }
                fs.writeFileSync(filePath + fileName, fileBuilder(opts, layout));
             }
@@ -542,7 +567,7 @@ module.exports = function(BasePlugin) {
 
       // Express REST like CRUD operations
       function save(req, res) {
-        fileWriter(fileBuilder(req), req, function(fileName) {
+        fileWriter(fileBuilder(req.body), req, function(fileName) {
           gitpad.saveFile(config.documentsPaths + fileName + '.md', 'User initiated save of ' + fileName, 
             function(err) {
               console.log(err);
@@ -695,6 +720,7 @@ module.exports = function(BasePlugin) {
           });
         }
 
+        var i = 1;
         opts.collection.forEach(function(model) {
             var meta = model.getMeta().attributes,
                 key,

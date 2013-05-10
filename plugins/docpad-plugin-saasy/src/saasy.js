@@ -243,8 +243,9 @@ function saveAll() {
   // models format:
   // models = {
   //   filenameA: {
-  //     type: 'type',
-  //     meta: { ... },
+  //     meta: { 
+  //       type: ...,
+  //       ... },
   //     content: 'content'
   //   },
   //   filenameB: {
@@ -263,7 +264,7 @@ function saveAll() {
     }
 
     if (typeof models[fileName] === 'undefined') {
-      models[fileName] = { type: fileType, meta: {} };
+      models[fileName] = { type: fileType }; // TODO!!!
     }
 
     var key = $(this).data('key');
@@ -271,7 +272,7 @@ function saveAll() {
 
     // WARNING: Make the user aware that they should not use 'content' as a meta key!!
     if (key !== 'content') {
-      models[fileName].meta[key] = content;
+      models[fileName][key] = content;
 
     } else {
       models[fileName].content = content;
@@ -279,19 +280,13 @@ function saveAll() {
 
   });
 
-  // $.ajax({
-  //   url: '/saasy/edit',
-  //   type: 'POST',
-  //   data: model
-  // }).done(function (result) {
-  //   if (result.fileName) {
-  //     generationLocation = result.fileName;
-  //   }
+  console.log(models);
 
-  //   if (done) {
-  //     return done(result);
-  //   }
-  // });
+  $.ajax({
+    url: '/saasy/edit',
+    type: 'POST',
+    data: models
+  });
 
 }
 
