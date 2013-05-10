@@ -52,9 +52,13 @@
         <!-- Site Nav -->
         <nav>
             <% for page in @getCuratedCollection('menu', 2).toJSON(): %>
-                <% if page.url.indexOf('-page-') == -1: %>
+               <% if page.url.indexOf('-page-') == -1: %>
                     <a href="<%= page.url.replace('index.html', '') %>">
-	                    <%= page.title %>
+                    <% if page.url == @document.url: %>
+                        <%= @document.title %>
+                    <% else: %>
+                        <%= page.title %>
+                    <% end %>
                     </a>
                 <% end %>
             <% end %>
@@ -82,11 +86,11 @@
                         <% url += crumbs[crumb + 1]  + '/' %>
                     <% end %> 
                 <% end %>
-                <% thisCrumb = @document.title %>
                 <% if @document.parentType && @document.category: %>
-                    <% thisCrumb = @document.category %> 
+                    <%= @document.category %> 
+                <% else: %>
+                    <%= @document.title %>    
                 <% end %>
-                <%= thisCrumb %>
             </nav>
         <% end %>
 	</header>
