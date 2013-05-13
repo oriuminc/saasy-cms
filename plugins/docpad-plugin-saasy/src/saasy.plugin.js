@@ -731,7 +731,7 @@ module.exports = function(BasePlugin) {
             var meta = model.getMeta().attributes,
                 key,
                 contentType = getContentType(meta.type);
-            var editable = {content: '<div saasycontent class=\'saasy-wrap\' ng-model=\'' + makeHash(model.attributes.url  + '.content') + '\' data-key=\'content\' contenteditable=\'false\'>'+ model.get('content') + ' </div>'};
+            //var editable = {content: '<div saasycontent class=\'saasy-wrap\' ng-model=\'' + makeHash(model.attributes.url  + '.content') + '\' data-key=\'content\' contenteditable=\'false\'>'+ model.get('content') + ' </div>'};
             if(contentType) {
               for(key in contentType.fields) {
                 if(contentType.fields.hasOwnProperty(key) && meta[key]) {
@@ -741,19 +741,19 @@ module.exports = function(BasePlugin) {
                     model.set('$' + key, docpad.getCollection(contentType.fields[key]).findOne({ relativeBase:meta[key]}).attributes);
                     //deal with editing compound types here
                   } else {
-                    editable[key] = '<div saasycontent class=\'saasy-wrap\' data-key=\'' + key + '\' ng-model=\'' + makeHash(model.attributes.url  + '.' + key) + '\' contenteditable=\'false\'>'+ meta[key] + ' </div>';
+                    //editable[key] = '<div saasycontent class=\'saasy-wrap\' data-key=\'' + key + '\' ng-model=\'' + makeHash(model.attributes.url  + '.' + key) + '\' contenteditable=\'false\'>'+ meta[key] + ' </div>';
                   }
                 }
               }
 
             }
-            for (key in config.globalFields) {
+            /*for (key in config.globalFields) {
             if(config.globalFields.hasOwnProperty(key) && meta[key]) {
                 editable[key] = '<div saasycontent class=\'saasy-wrap\' data-key=\'' + key + '\' ng-model=\'' + makeHash(model.attributes.url  + '.' + key) + '\' contenteditable=\'false\'>'+ meta[key] + ' </div>';
               }
             }
             model.set('editable', editable);
-            
+            */
             var additionalLayouts = getAdditionalLayouts(model.attributes.type || model.attributes.pagedCollection);
             if(additionalLayouts.length) {
               if(model.get('isPaged')) {
