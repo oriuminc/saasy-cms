@@ -64,7 +64,7 @@
             <% end %>
         </nav>
 
-        <!-- Breadcrumb nav --> 
+        <!-- Breadcrumb nav -->
         <% crumbs = @document.url.split('/') %>
         <% if crumbs[1] != 'index.html': %>
             <nav id='breadcrumb'>
@@ -96,7 +96,7 @@
 	</header>
     
     <section>
-		<%- @content %>
+    	  <%- @content %>
     </section>
 
     <footer>

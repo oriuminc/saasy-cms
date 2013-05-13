@@ -13,7 +13,7 @@ layout: 'default'
 
     <%- @document.editable["Authored Date"] %>
     in the middle
-    <%= @document.editable.content %>
+    <%- @document.editable.content %>
 </article>
 
 <aside>
