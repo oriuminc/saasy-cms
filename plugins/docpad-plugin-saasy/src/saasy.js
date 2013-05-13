@@ -268,7 +268,7 @@ function saveAll() {
     }
 
     var key = $(this).data('key');
-    var content = $(this).text();
+    var content = $(this).html();
 
     // WARNING: Make the user aware that they should not use 'content' as a meta key!!
     if (key !== 'content') {
