@@ -37,6 +37,7 @@ module.exports = function(BasePlugin) {
 
     // Name our plugin
     Saasy.prototype.name = 'saasy';
+    Saasy.prototype.priority = 501;
 
     //remove spaces from filenames and give them a max length
     function fixFilePath(str) {
@@ -716,7 +717,7 @@ module.exports = function(BasePlugin) {
                 document.set('basename', name);
                 document.set('layout', layout);
                 document.set('type', 'generated');
-                // document.setMETA('type', 'generated');
+                document.setMeta('additionalLayouts', 'true');
                 document.contextualize({}, function () {
                     toRender.push(document);
                     if(!--count) {
