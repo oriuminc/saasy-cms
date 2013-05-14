@@ -252,6 +252,7 @@ function saveAll() {
   //     ...
   //   }
   // }
+  if (pageFileName === '.md') pageFileName = 'index.html.md';
 
   $('[contenteditable="false"]').each(function() {
     var fileName = pageFileName,
@@ -264,7 +265,7 @@ function saveAll() {
     }
 
     if (typeof models[fileName] === 'undefined') {
-      models[fileName] = { type: fileType }; // TODO!!!
+      models[fileName] = { type: fileType };
     }
 
     var key = $(this).data('key');
