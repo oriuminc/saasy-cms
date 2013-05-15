@@ -21,6 +21,7 @@ module.exports = function(BasePlugin) {
       collections = {},
       gitpad = require('gitpad'),
       ncp = require('ncp'),
+      crypto = require('crypto'),
       fs = require('fs'),
       cson = require('cson'),
       yaml = require('yamljs'),
@@ -424,11 +425,20 @@ module.exports = function(BasePlugin) {
       next();
     };
 
+   //set up our editable content
    Saasy.prototype.render = function(opts) {
-      // console.log(opts.outExtension);
-      // if (opts.inExtension.toLowerCase() === 'eco' && opts.file.get('url').split('.').pop().toLowerCase() === 'html') {
-      //   opts.content = opts.content.replace(/<%[=|-]\s?(@content|@document\..+)\s?%>/g, '<div style="display: inline" contenteditable="false">$1</div>');
-      // }
+      if (opts.inExtension === 'eco') {
+        opts.content = opts.content.replace(/<%[=|\-]\s*?(@document[\.|\[](editable[\.|\[])?([a-zA-Z0-9_'"\s\]]+)?)\s*?%>?/g, function(match, match2, isEditable, key) {
+            var dataKey = key.replace(/'|"|]|/g,'').trim(),
+                modelKey = 's.' + crypto.createHash('md5').update(opts.templateData.document.id + '.' + dataKey).digest("hex"),
+                tagName = isEditable ? 'div' : 'i',
+                htmlAttr = ' data-key="' + dataKey + '" ' +  (isEditable ? 'contenteditable="false"' : ''); 
+
+              return '<' + tagName + htmlAttr + ' saasycontent class="saasy-wrap" ng-model="' + modelKey +'">' + match.replace(/\.editable/, '') + '</' + tagName + '>';
+        }).replace(/<%[-|=]\s*@partial\(\s*['|"](.*?)['|"]\s*\)\s*%>/g, function(match, filename) { 
+          return '<div class="saasy-partial" data-filename="' + filename + '">' + match + '</div>'
+        });
+      }
     };
 
     // Inject our CMS front end to the server 'out' files
@@ -436,16 +446,15 @@ module.exports = function(BasePlugin) {
       var file = opts.file,
           injectionPoint = '<body>';
 
-      function injectJs() {
-        opts.content = opts.content.replace('<body>', '<body>' + saasyInjection + saasyDependencies);
+      function injectSaasy() {
+        opts.content = opts.content.replace(injectionPoint, '<body class="saasy-document" data-filename="' + opts.templateData.document.id + '">' + saasyInjection + saasyDependencies);
         next();
       }
-      
       // Only inject Saasy into Layouts with a opening body tag
       if (file.type === 'document' && file.attributes.isLayout && opts.content.indexOf(injectionPoint) > -1) {
         // If we've previously read our saasy cms files, then just inject the contents right away
         if (saasyInjection) {
-          return injectJs();
+          return injectSaasy();
         }
 
         // Read the contents of our Saasy JS/CSS/HTML
@@ -461,7 +470,7 @@ module.exports = function(BasePlugin) {
             }
             // Build our file contents and inject them into the page markup
             saasyInjection = '<style data-owner="saasy" type="text/css">' + cssData + '</style>' + markupData + '<script data-owner="saasy">var $S = { contentTypes:' + JSON.stringify(config.contentTypes) + ', globalFields:' + JSON.stringify(config.globalFields) +'};\n' + '</script>';
-            injectJs();
+            injectSaasy();
           });
         });
       }
@@ -732,7 +741,6 @@ module.exports = function(BasePlugin) {
             var meta = model.getMeta().attributes,
                 key,
                 contentType = getContentType(meta.type);
-            //var editable = {content: '<div saasycontent class=\'saasy-wrap\' ng-model=\'' + makeHash(model.attributes.url  + '.content') + '\' data-key=\'content\' contenteditable=\'false\'>'+ model.get('content') + ' </div>'};
             if(contentType) {
               for(key in contentType.fields) {
                 if(contentType.fields.hasOwnProperty(key) && meta[key]) {
@@ -741,20 +749,11 @@ module.exports = function(BasePlugin) {
                     var obj = docpad.getCollection(contentType.fields[key]).findOne({ relativeBase:meta[key]});
                     model.set('$' + key, docpad.getCollection(contentType.fields[key]).findOne({ relativeBase:meta[key]}).attributes);
                     //deal with editing compound types here
-                  } else {
-                    //editable[key] = '<div saasycontent class=\'saasy-wrap\' data-key=\'' + key + '\' ng-model=\'' + makeHash(model.attributes.url  + '.' + key) + '\' contenteditable=\'false\'>'+ meta[key] + ' </div>';
                   }
                 }
               }
 
             }
-            /*for (key in config.globalFields) {
-            if(config.globalFields.hasOwnProperty(key) && meta[key]) {
-                editable[key] = '<div saasycontent class=\'saasy-wrap\' data-key=\'' + key + '\' ng-model=\'' + makeHash(model.attributes.url  + '.' + key) + '\' contenteditable=\'false\'>'+ meta[key] + ' </div>';
-              }
-            }
-            model.set('editable', editable);
-            */
             var additionalLayouts = getAdditionalLayouts(model.attributes.type || model.attributes.pagedCollection);
             if(additionalLayouts.length) {
               if(model.get('isPaged')) {
