@@ -26,7 +26,10 @@ docpadConfig = {
       'contents/public'
   ]
 
-
+  plugins: 
+    livereload:
+        regenerateBlock:
+            "if ( log ) {\n  localStorage.setItem('docpad-livereload/reloaded', 'yes');\n}\nif($S.onGenerate) { $S.onGenerate(); } else { document.location.reload(); }"
   # =================================
 	# Template Data
 	# These are variables that will be accessible via our templates
