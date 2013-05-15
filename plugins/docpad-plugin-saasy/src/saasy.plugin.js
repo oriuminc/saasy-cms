@@ -454,6 +454,7 @@ module.exports = function(BasePlugin) {
         opts.content = opts.content.replace(injectionPoint, '<body class="saasy-document" data-filepath="' + opts.templateData.document.id + '">' + saasyInjection + saasyDependencies);
         next();
       }
+      
       // Only inject Saasy into Layouts with a opening body tag
       if (file.type === 'document' && file.attributes.isLayout && opts.content.indexOf(injectionPoint) > -1) {
         // If we've previously read our saasy cms files, then just inject the contents right away
