@@ -56,7 +56,7 @@ document.addEventListener('DOMContentLoaded', function () {
       
       replaceEscapedContentHolders();
       $body.show();
-
+      
       for (key in $S.contentTypes) {
         if ($S.contentTypes.hasOwnProperty(key) && !$S.contentTypes.partial) {
           html += '<a href=\'javascript:$S.API.createForm($S.contentTypes[' + key + '])\'>Form ' + $S.contentTypes[key].name + '</a>';
@@ -71,6 +71,7 @@ document.addEventListener('DOMContentLoaded', function () {
         event.preventDefault();
         $S.API.create($(this).serialize());
       });
+      CKEDITOR.disableAutoInline = true;
     }
 
     function isCompoundType(type) {
@@ -160,6 +161,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
     init();
 
+    var $editable = $('[contenteditable="false"]'), 
+        $editPage = $('.edit-page'),
+        $savePage = $('.save-page'),
+        $exitEdit = $('.exit-edit');
+
     return {
         createForm: function (type) {
             $formSlot.html(buildForm(type));
@@ -200,6 +206,93 @@ document.addEventListener('DOMContentLoaded', function () {
         rename: function () {
         },
         curate: function () {
+        },
+        enableInlineAll: function () {
+          $editable.attr("contenteditable", "true");
+          $editPage.hide();
+          $savePage.show();
+          $exitEdit.show();
+
+          CKEDITOR.inlineAll();
+        },
+        saveAll: function () {
+          // Transform the page, get rid of all the inline editing panels and stuffs
+          $editPage.show();
+          $savePage.hide();
+          $exitEdit.hide();
+          var name;
+          for (name in CKEDITOR.instances){
+            if (CKEDITOR.instances.hasOwnProperty(name))
+              CKEDITOR.instances[name].destroy();
+          }
+          $editable.attr("contenteditable", "false");
+
+          // Grab file name from url, use REST api to update file
+          var urlTokens = document.URL.split('/'),
+              pageFileName = urlTokens.pop() + '.md',
+              pageFileType = urlTokens.pop(),
+              models = {};
+          // models format:
+          // models = {
+          //   filenameA: {
+          //     meta: { 
+          //       type: ...,
+          //       ... },
+          //     content: 'content'
+          //   },
+          //   filenameB: {
+          //     ...
+          //   }
+          // }
+          if (pageFileName === '.md') pageFileName = 'index.html.md';
+
+          $editable.each(function() {
+            var fileName = pageFileName,
+              fileType = pageFileType,
+              container = $(this).closest('.saasy-partial');
+
+            if (container.length > 0) {
+              fileName = container.data('filename');
+              fileType = container.data('type');
+            }
+
+            if (typeof models[fileName] === 'undefined') {
+              models[fileName] = { type: fileType };
+            }
+
+            var key = $(this).data('key');
+            var content = $(this).html();
+
+            // WARNING: Make the user aware that they should not use 'content' as a meta key!!
+            if (key !== 'content') {
+              models[fileName][key] = content;
+
+            } else {
+              models[fileName].content = content;
+            }
+
+          });
+
+          console.log(models);
+
+          $.ajax({
+            url: '/saasy/edit',
+            type: 'POST',
+            data: models
+          });
+
+        },
+        exitEdit: function () {
+          $editPage.show();
+          $savePage.hide();
+          $exitEdit.hide();
+
+          for (name in CKEDITOR.instances){
+            if (CKEDITOR.instances.hasOwnProperty(name))
+              CKEDITOR.instances[name].destroy();
+          }
+
+          $editable.attr("contenteditable", "false");
         }
     };
     
@@ -207,100 +300,3 @@ document.addEventListener('DOMContentLoaded', function () {
 
 });
 
-
-/*
-  Edit mode
-*/
-// Disable ckeditor automatic inline editing mode
-CKEDITOR.disableAutoInline = true;
-
-// Enable inline editing on current page
-function enableInlineAll() {
-  $('[contenteditable="false"]').attr("contenteditable", "true");
-  $('.edit-page').hide();
-  $('.save-page').show();
-  $('.exit-edit').show();
-  CKEDITOR.inlineAll();
-}
-
-// Save edited content
-function saveAll() {
-  // Transform the page, get rid of all the inline editing panels and stuffs
-  $('.edit-page').show();
-  $('.save-page').hide();
-  $('.exit-edit').hide();
-  for (name in CKEDITOR.instances){
-    if (CKEDITOR.instances.hasOwnProperty(name))
-      CKEDITOR.instances[name].destroy();
-  }
-  $('[contenteditable="true"]').attr("contenteditable", "false");
-
-  // Grab file name from url, use REST api to update file
-  var urlTokens = document.URL.split('/');
-  var pageFileName = urlTokens.pop() + '.md';
-  var pageFileType = urlTokens.pop();
-  var models = {};
-  // models format:
-  // models = {
-  //   filenameA: {
-  //     meta: { 
-  //       type: ...,
-  //       ... },
-  //     content: 'content'
-  //   },
-  //   filenameB: {
-  //     ...
-  //   }
-  // }
-  if (pageFileName === '.md') pageFileName = 'index.html.md';
-
-  $('[contenteditable="false"]').each(function() {
-    var fileName = pageFileName,
-      fileType = pageFileType,
-      container = $(this).closest('.saasy-partial');
-
-    if (container.length > 0) {
-      fileName = container.data('filename');
-      fileType = container.data('type');
-    }
-
-    if (typeof models[fileName] === 'undefined') {
-      models[fileName] = { type: fileType };
-    }
-
-    var key = $(this).data('key');
-    var content = $(this).html();
-
-    // WARNING: Make the user aware that they should not use 'content' as a meta key!!
-    if (key !== 'content') {
-      models[fileName][key] = content;
-
-    } else {
-      models[fileName].content = content;
-    }
-
-  });
-
-  console.log(models);
-
-  $.ajax({
-    url: '/saasy/edit',
-    type: 'POST',
-    data: models
-  });
-
-}
-
-// Exit edit mode (without saving)
-function exitEdit() {
-  $('.edit-page').show();
-  $('.save-page').hide();
-  $('.exit-edit').hide();
-
-  for (name in CKEDITOR.instances){
-    if (CKEDITOR.instances.hasOwnProperty(name))
-      CKEDITOR.instances[name].destroy();
-  }
-
-  $('[contenteditable="true"]').attr("contenteditable", "false");
-}
