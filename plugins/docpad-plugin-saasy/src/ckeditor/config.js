@@ -10,18 +10,18 @@ CKEDITOR.editorConfig = function( config ) {
 
 	// The toolbar groups arrangement, optimized for two toolbar rows.
 	config.toolbarGroups = [
-		{ name: 'history',   groups: [ 'undo' ] },
-		{ name: 'editing',     groups: [ 'find', 'selection', 'spellchecker' ] },
-		{ name: 'paragraph',   groups: [ 'list', 'indent', 'blocks', 'align' ] },
+		{ name: 'history',			groups: [ 'undo' ] },
+		{ name: 'editing',			groups: [ 'find', 'selection', 'spellchecker' ] },
+		{ name: 'paragraph',		groups: [ 'list', 'indent', 'blocks', 'align' ] },
 		{ name: 'links' },
 		{ name: 'insert' },
 		{ name: 'forms' },
 		{ name: 'tools' },
-		{ name: 'document',	   groups: [ 'mode', 'document', 'doctools' ] },
-		{ name: 'others' },
+		{ name: 'document',			groups: [ 'mode', 'document', 'doctools', 'sourcedialog' ] },
+		{ name: 'others', groups: [ 'entities' ] },
 		'/',
-		{ name: 'basicstyles', groups: [ 'basicstyles', 'cleanup' ] },
-		{ name: 'font', groups: [ 'font' ] },
+		{ name: 'basicstyles',	groups: [ 'basicstyles', 'cleanup' ] },
+		{ name: 'font',					groups: [ 'font' ] },
 		{ name: 'styles' },
 		{ name: 'colors' },
 	];
@@ -37,7 +37,7 @@ CKEDITOR.editorConfig = function( config ) {
 	config.removeDialogTabs = 'image:advanced;link:advanced';
 
 	// Plugins
-	config.extraPlugins = 'font';
+	config.extraPlugins = 'font,sourcedialog,entities';
 
 	// Enter mode
 	config.enterMode = CKEDITOR.ENTER_BR;
