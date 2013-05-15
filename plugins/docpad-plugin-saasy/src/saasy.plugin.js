@@ -137,8 +137,6 @@ module.exports = function(BasePlugin) {
     // Read the file and return an object containing meta and contents of the file
     function fileUpdater(req, cb) {
       var 
-        contentProcessing = 'meta',
-        partialTypeRegex = /partial\/.*/,
         filePath,
         model;
 
@@ -192,9 +190,7 @@ module.exports = function(BasePlugin) {
           // Replace whatever needed to be edited with new content
           for (key in model) {
             if (model.hasOwnProperty(key) && fileObject.hasOwnProperty(key)) {
-              if (key === 'type' && partialTypeRegex.test(model[key])) {
-                fileObject[key] = model[key].replace(/partial\//, "");
-              } else {
+              if (key != 'type') {
                 fileObject[key] = model[key];
               }
             }
@@ -210,14 +206,22 @@ module.exports = function(BasePlugin) {
       }
 
       console.log(req.body);
-      for (filename in req.body) {
-        model = req.body[filename];
+      for (filePath in req.body) {
+        model = req.body[filePath];
 
         // File is a partial
-        if (partialTypeRegex.test(model.type)) {
-          filePath = config.rootPath + '/src/contents/partials/' + filename; 
-        } else {
-          filePath = config.rootPath + '/src/contents/documents/' + model.type + '/' + filename;
+        switch (model.type) {
+          case 'document':
+            filePath = config.rootPath + '/src/contents/documents/' + filePath;
+            break;
+
+          case 'partial':
+            filePath = config.rootPath + '/src/contents/partials/' + filePath;
+            break;
+
+          default:
+            console.log('Unknown type: '+model.type);
+            return;
         }
 
         updateFile(filePath, model);

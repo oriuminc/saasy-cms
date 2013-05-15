@@ -237,7 +237,6 @@ function saveAll() {
 
   // Grab file path from body, use REST api to update file
   var pageFilePath = $('body').data('filepath');
-  var bodyclass = $('body').class();
   var pageFileType;
   if ($('body').hasClass('saasy-document')) {
     pageFileType = 'document';
@@ -289,11 +288,11 @@ function saveAll() {
 
   console.log(models);
 
-  // $.ajax({
-  //   url: '/saasy/edit',
-  //   type: 'POST',
-  //   data: models
-  // });
+  $.ajax({
+    url: '/saasy/edit',
+    type: 'POST',
+    data: models
+  });
 
 }
 
