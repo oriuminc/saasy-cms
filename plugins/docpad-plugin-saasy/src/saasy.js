@@ -235,10 +235,17 @@ function saveAll() {
   }
   $('[contenteditable="true"]').attr("contenteditable", "false");
 
-  // Grab file name from url, use REST api to update file
-  var urlTokens = document.URL.split('/');
-  var pageFileName = urlTokens.pop() + '.md';
-  var pageFileType = urlTokens.pop();
+  // Grab file path from body, use REST api to update file
+  var pageFilePath = $('body').data('filepath');
+  var bodyclass = $('body').class();
+  var pageFileType;
+  if ($('body').hasClass('saasy-document')) {
+    pageFileType = 'document';
+  } else if ($('body').hasClass('saasy-partial')) {
+    pageFileType = 'partial';
+  } else {
+    // add other file type cases here
+  }
   var models = {};
   // models format:
   // models = {
@@ -252,20 +259,19 @@ function saveAll() {
   //     ...
   //   }
   // }
-  if (pageFileName === '.md') pageFileName = 'index.html.md';
 
   $('[contenteditable="false"]').each(function() {
-    var fileName = pageFileName,
+    var filePath = pageFilePath,
       fileType = pageFileType,
       container = $(this).closest('.saasy-partial');
 
     if (container.length > 0) {
-      fileName = container.data('filename');
-      fileType = container.data('type');
+      filePath = container.data('filepath');
+      fileType = 'partial';
     }
 
-    if (typeof models[fileName] === 'undefined') {
-      models[fileName] = { type: fileType };
+    if (typeof models[filePath] === 'undefined') {
+      models[filePath] = { type: fileType };
     }
 
     var key = $(this).data('key');
@@ -273,21 +279,21 @@ function saveAll() {
 
     // WARNING: Make the user aware that they should not use 'content' as a meta key!!
     if (key !== 'content') {
-      models[fileName][key] = content;
+      models[filePath][key] = content;
 
     } else {
-      models[fileName].content = content;
+      models[filePath].content = content;
     }
 
   });
 
   console.log(models);
 
-  $.ajax({
-    url: '/saasy/edit',
-    type: 'POST',
-    data: models
-  });
+  // $.ajax({
+  //   url: '/saasy/edit',
+  //   type: 'POST',
+  //   data: models
+  // });
 
 }
 

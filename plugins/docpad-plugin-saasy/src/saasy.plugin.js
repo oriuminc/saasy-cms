@@ -435,8 +435,8 @@ module.exports = function(BasePlugin) {
                 htmlAttr = ' data-key="' + dataKey + '" ' +  (isEditable ? 'contenteditable="false"' : ''); 
 
               return '<' + tagName + htmlAttr + ' saasycontent class="saasy-wrap" ng-model="' + modelKey +'">' + match.replace(/\.editable/, '') + '</' + tagName + '>';
-        }).replace(/<%[-|=]\s*@partial\(\s*['|"](.*?)['|"]\s*\)\s*%>/g, function(match, filename) { 
-          return '<div class="saasy-partial" data-filename="' + filename + '">' + match + '</div>'
+        }).replace(/<%[-|=]\s*@partial\(\s*['|"](.*?)['|"]\s*\)\s*%>/g, function(match, filepath) { 
+          return '<div class="saasy-partial" data-filepath="' + filepath + '">' + match + '</div>'
         });
       }
     };
@@ -447,7 +447,7 @@ module.exports = function(BasePlugin) {
           injectionPoint = '<body>';
 
       function injectSaasy() {
-        opts.content = opts.content.replace(injectionPoint, '<body class="saasy-document" data-filename="' + opts.templateData.document.id + '">' + saasyInjection + saasyDependencies);
+        opts.content = opts.content.replace(injectionPoint, '<body class="saasy-document" data-filepath="' + opts.templateData.document.id + '">' + saasyInjection + saasyDependencies);
         next();
       }
       // Only inject Saasy into Layouts with a opening body tag
