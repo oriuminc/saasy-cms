@@ -207,6 +207,7 @@ document.addEventListener('DOMContentLoaded', function () {
         },
         curate: function () {
         },
+
         enableInlineAll: function () {
           $editable.attr("contenteditable", "true");
           $editPage.hide();
@@ -215,23 +216,30 @@ document.addEventListener('DOMContentLoaded', function () {
 
           CKEDITOR.inlineAll();
         },
+
+        // Save edited content
         saveAll: function () {
           // Transform the page, get rid of all the inline editing panels and stuffs
-          $editPage.show();
-          $savePage.hide();
-          $exitEdit.hide();
-          var name;
+          $('.edit-page').show();
+          $('.save-page').hide();
+          $('.exit-edit').hide();
           for (name in CKEDITOR.instances){
             if (CKEDITOR.instances.hasOwnProperty(name))
               CKEDITOR.instances[name].destroy();
           }
-          $editable.attr("contenteditable", "false");
+          $('[contenteditable="true"]').attr("contenteditable", "false");
 
-          // Grab file name from url, use REST api to update file
-          var urlTokens = document.URL.split('/'),
-              pageFileName = urlTokens.pop() + '.md',
-              pageFileType = urlTokens.pop(),
-              models = {};
+          // Grab file path from body, use REST api to update file
+          var pageFilePath = $('body').data('filepath');
+          var pageFileType;
+          if ($('body').hasClass('saasy-document')) {
+            pageFileType = 'document';
+          } else if ($('body').hasClass('saasy-partial')) {
+            pageFileType = 'partial';
+          } else {
+            // add other file type cases here
+          }
+          var models = {};
           // models format:
           // models = {
           //   filenameA: {
@@ -244,20 +252,19 @@ document.addEventListener('DOMContentLoaded', function () {
           //     ...
           //   }
           // }
-          if (pageFileName === '.md') pageFileName = 'index.html.md';
 
-          $editable.each(function() {
-            var fileName = pageFileName,
+          $('[contenteditable="false"]').each(function() {
+            var filePath = pageFilePath,
               fileType = pageFileType,
               container = $(this).closest('.saasy-partial');
 
             if (container.length > 0) {
-              fileName = container.data('filename');
-              fileType = container.data('type');
+              filePath = container.data('filepath');
+              fileType = 'partial';
             }
 
-            if (typeof models[fileName] === 'undefined') {
-              models[fileName] = { type: fileType };
+            if (typeof models[filePath] === 'undefined') {
+              models[filePath] = { type: fileType };
             }
 
             var key = $(this).data('key');
@@ -265,10 +272,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
             // WARNING: Make the user aware that they should not use 'content' as a meta key!!
             if (key !== 'content') {
-              models[fileName][key] = content;
+              models[filePath][key] = content;
 
             } else {
-              models[fileName].content = content;
+              models[filePath].content = content;
             }
 
           });
@@ -282,6 +289,7 @@ document.addEventListener('DOMContentLoaded', function () {
           });
 
         },
+
         exitEdit: function () {
           $editPage.show();
           $savePage.hide();
