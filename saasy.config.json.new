@@ -20,7 +20,11 @@
         "fields": { 
             "Featured Image": "media",
             "Authored Date": "date" ,
-            "Author": "person" 
+            "Author": "person",
+            "Three Letter Country Code": {
+                "type": "text",
+                "validation": "[A-Za-z]{3}"
+            } 
         },
         "categories": {
             "names": [
