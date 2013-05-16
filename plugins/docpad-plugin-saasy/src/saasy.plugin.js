@@ -636,7 +636,6 @@ module.exports = function(BasePlugin) {
       server.get('/saasy/document/:type?/:filename?', function(req, res) {
 
         // A helper function that takes a docpad file and output an object with desired fields from the file
-        var done = true;//false;
         function fetchFields(file) {
           var data = { meta: file.meta, content: file.attributes.content, attributes: file.attributes };
           for (var i = 0; req.query.af && i<req.query.af.length; i++) {
@@ -650,7 +649,7 @@ module.exports = function(BasePlugin) {
         function getFilteredCollection(type) {
           var filter = {},
               sort = {},
-              filterObject = JSON.parse(req.query.filter),
+              filterObject = req.query.filter ? JSON.parse(req.query.filter) : {},
               collection;
 
           // Be ware: the filter is applied on the attributes of the file, not the META which is what the user is getting!
@@ -677,10 +676,17 @@ module.exports = function(BasePlugin) {
           return collection;
         }
 
-
+        if(req.params.type === 'file') {
+            req.params.type = 'files';
+        }
         // If type and filename are both specified, send specific file
         if(req.params.type && req.params.filename) {
-          var file = docpad.getFile({type: req.params.type, basename: req.params.filename});
+          var filter = { type: req.params.type, basename: req.params.filename},
+              file;
+          if(req.params.type.toLowerCase().trim() === 'files') {
+            filter = { relativePath: req.params.filename'};
+          }
+          file = docpad.getFile(filter);
           res.send(fetchFields(file));
 
         // If only type specified, send everthing in that type

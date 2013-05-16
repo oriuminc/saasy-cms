@@ -17,6 +17,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
   $S.onGenerate = function () {
     if (generationLocation) {
+      if (generationLocation === -1) {
+        return;
+      }
       document.location.href = generationLocation;
     } else {
       document.location.reload();
@@ -87,31 +90,43 @@ document.addEventListener('DOMContentLoaded', function () {
     
     function buildForm(type, fileName) {
       var key,
-          inputTypes = ['text', 'textarea', 'checkbox', 'datetime', 'date', 'email', 'url'],
+          inputTypes = ['text', 'file', 'textarea', 'checkbox', 'datetime', 'date', 'email', 'url'],
           obj,
           myId,
           myName,
           html = '';
 
       function buildInput(type, id, name) {
+          var pattern = '';
+          if(typeof type === 'object') {
+            name = type.validationType || name;
+            pattern = type.validationPattern || type.validation || type.pattern;
+            if(pattern) {
+                pattern = 'pattern="' + pattern + '"'
+            } else {
+                pattern = '';
+            }
+            type = type.type || 'text';
+          }
+          
           type = type.toLowerCase();
-          if(type === 'image' || type === 'video' || type === 'movie' || type === 'file') {
-            type = 'media';
+          if(type === 'media' || type === 'image' || type === 'video' || type === 'movie' || type === 'file') {
+            type = 'file';
           }
           if(isCompoundType(type)) {
             return '<button>Choose</button>';
           }
+          
           if(inputTypes.indexOf(type) === -1) {
             console.log("Saasy doesn't know how to draw an input of type=" + type + " - using type=text as default");
             type = 'text';
           }
+          
           switch (type) {
             case 'textarea':
-              return '<textarea id="' + id + '" name="' + name + '"></textarea>';
-            case 'media':
-              return '<input id="' + id + '" name="' + name + '" type="file">';
+              return '<textarea required id="' + id + '" title="' + name + '"' + pattern + '></textarea>';
             default:
-              return '<input id="' + id + '" name="' + name + '" type="' + type + '">';
+              return '<input required id="' + id + '" title="' + name + '" type="' + type + '" ' + pattern + '>';
           }
       }
 
@@ -187,6 +202,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 result = JSON.parse(result);
                 if (result.fileName) {
                     generationLocation = result.fileName;
+                } else {
+                    generationLocation = null;
                 }
 
                 if (done) {
@@ -230,8 +247,11 @@ document.addEventListener('DOMContentLoaded', function () {
           $('[contenteditable="true"]').attr("contenteditable", "false");
 
           // Grab file path from body, use REST api to update file
-          var pageFilePath = $('body').data('filepath');
-          var pageFileType;
+          var pageFilePath = $('body').data('filepath'),
+              models = {},
+              key,
+              content,
+              pageFileType;
           if ($('body').hasClass('saasy-document')) {
             pageFileType = 'document';
           } else if ($('body').hasClass('saasy-partial')) {
@@ -239,19 +259,6 @@ document.addEventListener('DOMContentLoaded', function () {
           } else {
             // add other file type cases here
           }
-          var models = {};
-          // models format:
-          // models = {
-          //   filenameA: {
-          //     meta: { 
-          //       type: ...,
-          //       ... },
-          //     content: 'content'
-          //   },
-          //   filenameB: {
-          //     ...
-          //   }
-          // }
 
           $('[contenteditable="false"]').each(function() {
             var filePath = pageFilePath,
@@ -267,8 +274,8 @@ document.addEventListener('DOMContentLoaded', function () {
               models[filePath] = { type: fileType };
             }
 
-            var key = $(this).data('key');
-            var content = $(this).html();
+            key = $(this).data('key');
+            content = $(this).html();
 
             // WARNING: Make the user aware that they should not use 'content' as a meta key!!
             if (key !== 'content') {
@@ -280,12 +287,16 @@ document.addEventListener('DOMContentLoaded', function () {
 
           });
 
-          console.log(models);
-
+          msg('Saving...');
+          generationLocation = -1; 
           $.ajax({
             url: '/saasy/edit',
             type: 'POST',
             data: models
+          }).complete(function() {
+            window.setTimeout(function () {
+                msg('Generating Static Site...');
+            }, 800);
           });
 
         },
