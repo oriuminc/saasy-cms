@@ -38,7 +38,7 @@ module.exports = function(BasePlugin) {
 
     // Name our plugin
     Saasy.prototype.name = 'saasy';
-    Saasy.prototype.priority = 501;
+    Saasy.prototype.priority = Number.MAX_VALUE;
 
     //remove spaces from filenames and give them a max length
     function fixFilePath(str) {
@@ -100,7 +100,6 @@ module.exports = function(BasePlugin) {
     }
 
     // Build the contents of a file to be saved as a string
-    // TODO: fileBuilder now assumes the meta are of yaml format and does not handle arrays properly yet, use yamljs or cson
    function fileBuilder(fileObject, layout, metaParser) {
       var key,
         loremIpsum = 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Quisque aliquam est convallis nibh vestibulum lacinia. Vestibulum dolor arcu, vulputate ut molestie sit amet, laoreet vitae mi. Suspendisse venenatis, quam at lacinia luctus, libero turpis molestie arcu, sed feugiat leo risus ac quam. Donec vel neque id tortor lacinia viverra. Pellentesque mollis justo purus. Cras quis tortor sed nibh fringilla gravida vitae eu diam. Ut erat elit, volutpat sed eleifend non, hendrerit vel tortor. Etiam facilisis sollicitudin venenatis. Morbi convallis tincidunt ligula, id tempor metus eleifend eu. Integer a risus ipsum, eu congue magna.'
@@ -326,8 +325,8 @@ module.exports = function(BasePlugin) {
                     pagedCollection: type,
                     isPaged: true,
                     pageSize: pageSize || 5,
-                    title: title,
-                    content: title
+                    title: title/*,
+                    content: title:*/
                 };
                 if (category) {
                     opts.category = category;
@@ -350,7 +349,6 @@ module.exports = function(BasePlugin) {
         config.contentTypes = result.types;
         //special saasy global fields
         config.globalFields = {
-            "filename": "text",
             "content": "textarea"
         };
         config._globalFields = result.globalFields;
@@ -432,7 +430,7 @@ module.exports = function(BasePlugin) {
    //set up our editable content
    Saasy.prototype.render = function(opts) {
       if (opts.inExtension === 'eco') {
-        opts.content = opts.content.replace(/<%[=|\-]\s*?(@document[\.|\[](editable[\.|\[])?([a-zA-Z0-9_'"\s\]]+)?)\s*?%>?/g, function(match, match2, isEditable, key) {
+        opts.content = opts.content.replace(/<%[=|\-]\s*(@document[\.|\[](editable[\.|\[])?([a-zA-Z0-9_'"\s\]]+)?)\s*%>?/g, function(match, match2, isEditable, key) {
             var dataKey = key.replace(/'|"|]|/g,'').trim(),
                 modelKey = 's.' + crypto.createHash('md5').update(opts.templateData.document.id + '.' + dataKey).digest("hex"),
                 tagName = isEditable ? 'div' : 'i',
@@ -500,11 +498,28 @@ module.exports = function(BasePlugin) {
 
       // Write the contents of a file to DOCPATH documents folder
       function fileWriter(str, req, cbSuccess, cbFail) {
-        var fileName = fixFilePath(req.body.filename)
+        var fileName,
             type = fixFilePath(req.body.type);
 
+        if (!req.body.filename) {
+          fileName = fixFilePath(req.body[req.body.primaryid]);
+        } else {
+          fileName = fixFilePath(req.body.filename)
+        }
+
+        console.log(fileName);
+
         function write () {
-          var filePath = config.documentsPaths + '/' + type + '/' + fileName + '.' + (req.body.format || 'html') + '.md';  
+          var filePathNoExt = config.documentsPaths + '/' + type + '/' + fileName;
+          var fileExt = (req.body.format || 'html') + '.md';
+          var filePath = filePathNoExt + '.' + fileExt;
+          counter = 0;
+          while (fs.existsSync(filePath)) {
+            counter++;
+            filePath = filePathNoExt + '-' + counter + '.' + fileExt;
+          }
+          console.log(filePath);
+
           fs.writeFile(filePath, str, function (err) {
             if(err) {
               cbFail();
@@ -633,18 +648,31 @@ module.exports = function(BasePlugin) {
         - sort: a field used to sort the list of result. If not specified will sort by date decrementally.
         - sortOrder: an order used to sort, default -1.
       */
-      server.get('/saasy/document/:type?/:filename?', function(req, res) {
+      var done = false;
+      server.get('/saasy/document/:type?/*', function(req, res) {
+        var data = [],
+            collection,
+            filter,
+            file,
+            counter,
+            i;
 
         // A helper function that takes a docpad file and output an object with desired fields from the file
         function fetchFields(file) {
-          var data = { meta: file.meta, content: file.attributes.content, attributes: file.attributes };
+          var meta = file.meta,
+              data;
+          meta.content = file.attributes.content || meta.content;
+          data = { filename: file.attributes.id, 
+                   url: file.attributes.url, 
+                   meta: file.meta, 
+                   renderedContent: file.attributes.contentRendered 
+          };
           for (var i = 0; req.query.af && i<req.query.af.length; i++) {
             var field = req.query.af[i];
             data[field] = file.attributes[field];
           }
           return data;
         }
-
 
         function getFilteredCollection(type) {
           var filter = {},
@@ -669,46 +697,38 @@ module.exports = function(BasePlugin) {
             collection = docpad.getCollection(type).findAll(filter, sort);
           } else {
             filter.type = {$ne: 'generated'};
-            console.log(filter);
             collection = docpad.getCollection('documents').findAll(filter, sort);
-            // console.log(collection);
           }
           return collection;
         }
 
+
         if(req.params.type === 'file') {
             req.params.type = 'files';
         }
+        req.params.filename = req.params[0];
         // If type and filename are both specified, send specific file
         if(req.params.type && req.params.filename) {
-          var filter = { type: req.params.type, basename: req.params.filename},
-              file;
+            filter = { type: req.params.type, basename: req.params.filename.replace(/\s/g, '-')};
+            counter = 1;
           if(req.params.type.toLowerCase().trim() === 'files') {
-            filter = { relativePath: req.params.filename'};
+            while(req.params[counter]) {
+                req.params.filename += (!counter ? '/' : '') + req.params[counter++];
+            }
+            filter = { relativePath: req.params.filename };
           }
           file = docpad.getFile(filter);
-          res.send(fetchFields(file));
-
-        // If only type specified, send everthing in that type
-        } else if (req.params.type) {
-          var collection = getFilteredCollection(req.params.type);
-          var dataArray = [];
-          for (var i=0; i<collection.models.length; i++) {
-            dataArray.push(fetchFields(collection.at(i)));
-          }
-
-          res.send(dataArray);
-
-        // If nothing specified, send all files (this includes the layout files!!)
+          data = file ? fetchFields(file) : [];
         } else {
-          var collection = getFilteredCollection(req.params.type);
-          var dataArray = [];
-          for (var i=0; i<collection.models.length; i++) {
-            dataArray.push(fetchFields(collection.at(i)));
+          collection = getFilteredCollection(req.params.type || req.params[0]);
+          if(req.query.pageSize && req.query.page) {
+            collection.models = collection.models.slice(req.query.pageSize * (req.query.page - 1), req.query.pageSize * req.query.page);
           }
-
-          res.send(dataArray);
+          for (i = 0; i<collection.models.length; i++) {
+            data.push(fetchFields(collection.at(i)));
+          }
         }
+        res.send(data);
       });
 
     }; 
@@ -723,10 +743,6 @@ module.exports = function(BasePlugin) {
 
         toRender = [];
 
-        function makeHash(key) {
-            return 's.' + crypto.createHash('md5').update(key).digest("hex"); 
-        }
-
         function addDoc(model, additionalLayouts) {
           additionalLayouts.forEach(function(layout) {
             count++;
@@ -737,7 +753,8 @@ module.exports = function(BasePlugin) {
                 document.set('basename', name);
                 document.set('layout', layout);
                 document.set('type', 'generated');
-                document.setMeta('additionalLayouts', 'true');
+                document.setMeta('layout' + (count + 1), 'true');
+                document.setMeta('generatedDoc', 1);
                 document.contextualize({}, function () {
                     toRender.push(document);
                     if(!--count) {
@@ -759,7 +776,6 @@ module.exports = function(BasePlugin) {
                   if(getContentType(contentType.fields[key])) {
                     var obj = docpad.getCollection(contentType.fields[key]).findOne({ relativeBase:meta[key]});
                     model.set('$' + key, docpad.getCollection(contentType.fields[key]).findOne({ relativeBase:meta[key]}).attributes);
-                    //deal with editing compound types here
                   }
                 }
               }

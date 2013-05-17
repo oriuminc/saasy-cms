@@ -1,23 +1,15 @@
 {
-    "globalFields": {
-        "title": "text",
-        "tags": "textarea"
-   }, 
-   "types": [
-    {
-        "name": "Footer",
-        "type": "footer",
-        "partial": true,
-        "fields": {
-            "footerContent": "textarea",
-            "copyright": "date"
-        }
-    },
+    "types": [
     {
         "name": "Blog Post",
         "type": "blog",
         "layout": ["blog", "data"],
-        "fields": { 
+        "fields": {
+            "title": {
+                "type": "text",
+                "primaryid": "true"
+            },
+            "tags": "textarea",
             "Featured Image": "media",
             "Authored Date": "date" ,
             "Author": "person",
@@ -43,6 +35,11 @@
         "type": "casestudy",
         "layout": "casestudy",
         "fields": {
+            "title": {
+                "type": "text",
+                "primaryid": "true"
+            },
+            "tags": "textarea",
             "Hero Image": "image",
             "Project URL": "url",
             "Teaser Text": "textarea",   
@@ -56,16 +53,28 @@
         "name": "Person",
         "type": "person",
         "fields": {
-            "Name": "text",
+            "Name": {
+                "type": "text",
+                "primaryid": "true"
+            },
             "Photo": "image",
             "Quote": "text"
         }
+
     }, {
         "name": "Job Posting",
         "type": "jobposting",
-        "fields": { 
+        "fields": {
+            "title": {
+                "type": "text",
+                "primaryid": "true"
+            },
+            "tags": "textarea",
             "Position": "text",
             "Description": "textarea"    
         }
-    }] 
+    }],
+    "globalFields": {
+        
+   }
 }

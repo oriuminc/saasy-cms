@@ -18,7 +18,7 @@ document.addEventListener('DOMContentLoaded', function () {
   $S.onGenerate = function () {
     if (generationLocation) {
       if (generationLocation === -1) {
-        return;
+        return msg();
       }
       document.location.href = generationLocation;
     } else {
@@ -98,13 +98,18 @@ document.addEventListener('DOMContentLoaded', function () {
 
       function buildInput(type, id, name) {
           var pattern = '';
+          var hiddenID = '';
           if(typeof type === 'object') {
+            console.log(type);
             name = type.validationType || name;
             pattern = type.validationPattern || type.validation || type.pattern;
             if(pattern) {
                 pattern = 'pattern="' + pattern + '"'
             } else {
                 pattern = '';
+            }
+            if (type.primaryid) {
+              hiddenID = '<input type="hidden" name="primaryid" value="' + name + '">';
             }
             type = type.type || 'text';
           }
@@ -124,9 +129,9 @@ document.addEventListener('DOMContentLoaded', function () {
           
           switch (type) {
             case 'textarea':
-              return '<textarea required id="' + id + '" title="' + name + '"' + pattern + '></textarea>';
+              return '<textarea required id="' + id + '" title="' + name + '" name="' + name + '" ' + pattern + '></textarea>' + hiddenID;
             default:
-              return '<input required id="' + id + '" title="' + name + '" type="' + type + '" ' + pattern + '>';
+              return '<input required id="' + id + '" title="' + name + '" name="' + name + '" type="' + type + '" ' + pattern + '>' + hiddenID;
           }
       }
 

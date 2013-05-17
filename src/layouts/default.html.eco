@@ -77,8 +77,9 @@
                     <% for crumb in [1..crumbs.length - 2]: %>
                         <% thisCrumb = @getCollection('html').findAll({pagedCollection:crumbs[crumb]}).toJSON() %>
                         <span>
-                            <% if thisCrumb.length: %> 
-                                <a href='<%= url %>'><%= thisCrumb[0].title %></a>
+                            <% if thisCrumb.length: %>
+                            <% thisCrumb = thisCrumb.pop(); %> 
+                            <a href='<%= url %>'><%= thisCrumb.title %></a>
                             <% else: %>
                                 <%= crumbs[crumb] %>
                             <% end %>
