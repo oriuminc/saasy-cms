@@ -10,7 +10,7 @@ layout: 'default'
   <% end %>
 <% end %>
 
-<h1><%- @document.editable.content %></h1>
+<h1><%- @document.editable.title %></h1>
 
 <% collection = @document.pagedCollection %>
 <% posts = @getCollection(collection) %>
