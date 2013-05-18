@@ -298,11 +298,6 @@ module.exports = function(BasePlugin) {
                        .replace(/[\t]/g, '\\t');
       };
 
-      // Automatically wraps contents for inline editing
-      /*config.templateData.editable = function (key) {
-        return "<div style='inline-block' contenteditable='false'>"+ +"</div>"
-      };*/
-
       //this creates a document via the file system, synchronously
       //used for generating documents during the docpadready event (which doesn't wait for a callback, so we gotta block)
       function createDocument(type, layouts, pageSize, category) {
@@ -326,7 +321,7 @@ module.exports = function(BasePlugin) {
                     isPaged: true,
                     pageSize: pageSize || 5,
                     title: title/*,
-                    content: title:*/
+                    content: title:*/  //Note: We used to also store the title in the "content", but the title should be on the title. Keep on eye that this doesn't cause regression
                 };
                 if (category) {
                     opts.category = category;
@@ -389,10 +384,10 @@ module.exports = function(BasePlugin) {
     };
 
     /* we may be able to use this to force docpad to generate everything */ 
-    Saasy.prototype.generateBefore = function (opts) {
-        //opts.reset = true;
-        //console.log(arguments);
-    };
+    /*Saasy.prototype.generateBefore = function (opts) {
+        opts.reset = true;
+        console.log(arguments);
+    };*/
 
 
     // Copy the script files over to the out directory
@@ -427,7 +422,7 @@ module.exports = function(BasePlugin) {
       next();
     };
 
-   //set up our editable content
+   //set up our editable content and wrap all partials with a div that contains their filename
    Saasy.prototype.render = function(opts) {
       if (opts.inExtension === 'eco') {
         opts.content = opts.content.replace(/<%[=|\-]\s*(@document[\.|\[](editable[\.|\[])?([a-zA-Z0-9_'"\s\]]+)?)\s*%>?/g, function(match, match2, isEditable, key) {
@@ -436,7 +431,7 @@ module.exports = function(BasePlugin) {
                 tagName = isEditable ? 'div' : 'i',
                 htmlAttr = ' data-key="' + dataKey + '" ' +  (isEditable ? 'contenteditable="false"' : ''); 
 
-              return '<' + tagName + htmlAttr + ' saasycontent class="saasy-wrap" ng-model="' + modelKey +'">' + match.replace(/\.editable/, '') + '</' + tagName + '>';
+              return '<' + tagName + htmlAttr + ' class="saasy-wrap" ng-model="' + modelKey + '" saasycontent>' + match.replace(/\.editable/, '') + '</' + tagName + '>';
         }).replace(/<%[-|=]\s*@partial\(\s*['|"](.*?)['|"]\s*\)\s*%>/g, function(match, filepath) { 
           return '<div class="saasy-partial" data-filepath="' + filepath + '">' + match + '</div>'
         });
@@ -446,6 +441,7 @@ module.exports = function(BasePlugin) {
     // Inject our CMS front end to the server 'out' files
     Saasy.prototype.renderDocument = function(opts, next) {
       var file = opts.file,
+          injectionMatch = /<body/,
           injectionPoint = '<body>';
 
       function injectSaasy() {
@@ -454,7 +450,7 @@ module.exports = function(BasePlugin) {
       }
       
       // Only inject Saasy into Layouts with a opening body tag
-      if (file.type === 'document' && file.attributes.isLayout && opts.content.indexOf(injectionPoint) > -1) {
+      if (file.type === 'document' && file.attributes.isLayout && opts.content.match(injectionMatch)) {
         // If we've previously read our saasy cms files, then just inject the contents right away
         if (saasyInjection) {
           return injectSaasy();
@@ -616,6 +612,50 @@ module.exports = function(BasePlugin) {
         save(req, res);
       });
 
+      server.post('/saasy/file', function(req, res) {
+        var key,
+            successful = [],
+            failed = [],
+            count = 0;
+
+        for (key in req.files) {
+          if (req.files.hasOwnProperty(key) && req.files[key].name) {
+             (function (file) {
+                var path = file.path,
+                    renameCounter = 0,
+                    name = config.filesPaths[0] + '/' + file.name,
+                    origName = name,
+                    result = {};
+                count++;
+                while (fs.existsSync(name)) {
+                    name = origName.replace(/(.*?)(\..*)/, '$1-' + (++renameCounter) + '$2')
+                }
+                fs.rename(path, name, function (err) {
+                    if(!err) {
+                        if(renameCounter) {
+                            successful.push({origName:file.name, newName:name.replace(config.filesPaths[0] + '/', '')});
+                         } else {
+                            successful.push({name:file.name});
+                         }
+                    } else {
+                        console.log(err);
+                        failed.push({file:file.name, err:err});
+                    }
+                    if (!--count) {
+                        if (successful.length + failed.length === 1) {
+                            return res.send(successful.length ? {success: successful} : {failure: err});
+                        }
+                        res.send({success: successful, error: failed}); 
+                    }
+                });
+             }(req.files[key]));
+          }
+        }
+        if (!count) {
+            res.send('No Files specified');
+        } 
+      });
+
       // Edit a file
       server.post('/saasy/edit', function (req, res) {
         fileUpdater(req);
@@ -665,6 +705,8 @@ module.exports = function(BasePlugin) {
           data = { filename: file.attributes.id, 
                    url: file.attributes.url, 
                    meta: file.meta, 
+                   contentType: file.attributes.outContentType,
+                   encoding: file.attributes.encoding,
                    renderedContent: file.attributes.contentRendered 
           };
           for (var i = 0; req.query.af && i<req.query.af.length; i++) {
@@ -703,7 +745,7 @@ module.exports = function(BasePlugin) {
         }
 
 
-        if(req.params.type === 'file') {
+        if(req.params.type === 'file' || req.params[0] === 'file') {
             req.params.type = 'files';
         }
         req.params.filename = req.params[0];
