@@ -719,6 +719,7 @@ module.exports = function(BasePlugin) {
         function getFilteredCollection(type) {
           var filter = {},
               sort = {},
+              filename,
               filterObject = req.query.filter ? JSON.parse(req.query.filter) : {},
               collection;
 
@@ -732,7 +733,11 @@ module.exports = function(BasePlugin) {
               }
             }
           }
-
+          for(key in req.query._filter) {
+            if(req.query._filter.hasOwnProperty(key)) {
+              filter[key] = req.query._filter[key];
+            }
+          }
           sort[req.query.sort || 'date'] = req.query.sortOrder || -1;
 
           if (type) {
@@ -749,7 +754,6 @@ module.exports = function(BasePlugin) {
             req.params.type = 'files';
         }
         req.params.filename = req.params[0];
-        // If type and filename are both specified, send specific file
         if(req.params.type && req.params.filename) {
             filter = { type: req.params.type, basename: req.params.filename.replace(/\s/g, '-')};
             counter = 1;
@@ -757,19 +761,30 @@ module.exports = function(BasePlugin) {
             while(req.params[counter]) {
                 req.params.filename += (!counter ? '/' : '') + req.params[counter++];
             }
-            filter = { relativePath: req.params.filename };
+            filename = req.params.filename.toLowerCase().replace(/\/|\s/g, '');
+            if(filename === 'images' || filename === 'image') {
+                req.query._filter = { outContentType: {$in: [ "image/png", "image/jpeg", "image/jpeg", "image/gif", "image/tiff", "image/svg+xml" ]}};
+            } else if(filename === 'videos' || filename === 'video') {
+                req.query._filter = { outContentType: {$in: [ "video/mpeg", "video/mp4", "video/ogg", "video/quicktime", "video/x-flv" ]}};
+            } else {
+                filter = { relativePath: req.params.filename };
+            }
           }
-          file = docpad.getFile(filter);
-          data = file ? fetchFields(file) : [];
-        } else {
-          collection = getFilteredCollection(req.params.type || req.params[0]);
-          if(req.query.pageSize && req.query.page) {
-            collection.models = collection.models.slice(req.query.pageSize * (req.query.page - 1), req.query.pageSize * req.query.page);
-          }
-          for (i = 0; i<collection.models.length; i++) {
-            data.push(fetchFields(collection.at(i)));
+
+          if(! req.query._filter) {
+            file = docpad.getFile(filter);
+            data = file ? fetchFields(file) : [];
+            return res.send(data);
           }
         }
+        collection = getFilteredCollection(req.params.type || req.params[0]);
+        if(req.query.pageSize && req.query.page) {
+          collection.models = collection.models.slice(req.query.pageSize * (req.query.page - 1), req.query.pageSize * req.query.page);
+        }
+        for (i = 0; i<collection.models.length; i++) {
+          data.push(fetchFields(collection.at(i)));
+        }
+        
         res.send(data);
       });
 
