@@ -58,7 +58,6 @@
 body {
     border-left:225px solid transparent;
     box-sizing:border-box;
-    display:none;
 }
 html:before {
    position:absolute;
