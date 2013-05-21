@@ -440,17 +440,16 @@ module.exports = function(BasePlugin) {
 
     // Inject our CMS front end to the server 'out' files
     Saasy.prototype.renderDocument = function(opts, next) {
-      var file = opts.file,
-          injectionMatch = /<body/,
-          injectionPoint = '<body>';
+      var file = opts.file;
 
       function injectSaasy() {
-        opts.content = opts.content.replace(injectionPoint, '<body class="saasy-document" data-filepath="' + opts.templateData.document.id + '">' + saasyInjection + saasyDependencies);
+        opts.content = opts.content.replace(/<body((.*?)(class=['|"](.*?)['|"](.*?))?)>/i, 
+                '<body class="saasy-document $4" $2 $5 data-filepath="' + opts.templateData.document.id + '">' + saasyInjection + saasyDependencies);
         next();
       }
       
       // Only inject Saasy into Layouts with a opening body tag
-      if (file.type === 'document' && file.attributes.isLayout && opts.content.match(injectionMatch)) {
+      if (file.type === 'document' && file.attributes.isLayout && opts.content.match(/<body/)) {
         // If we've previously read our saasy cms files, then just inject the contents right away
         if (saasyInjection) {
           return injectSaasy();

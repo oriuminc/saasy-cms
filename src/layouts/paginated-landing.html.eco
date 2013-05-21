@@ -1,15 +1,6 @@
 ---
 layout: 'default'
 ---
-<% content = @content || @document.title %>
-<% if ! content && @document.parentType: %>
-  <% parent = @getCollection('html').findAll({pagedCollection:@document.parentType}).toJSON() %>
-  <% if parent.length: %>
-    <% content = parent[0].title + ' | ' + @document.category %>
-    <% @document.title = content %>
-  <% end %>
-<% end %>
-
 <h1><%- @document.editable.title %></h1>
 
 <% collection = @document.pagedCollection %>
@@ -18,7 +9,7 @@ layout: 'default'
  <% for i in [@document.page.startIdx...@document.page.endIdx]: %>
       <% document = posts.at(i).toJSON() %>
       <article>
-          <h1><a href='<%=document.url%>'><%= document.title %></a></h1>
+          <h1><a href='<%=document.url%>'><%- document.title %></a></h1>
           <div class="date"><%= document.date.toLocaleDateString() %></div>
           <div class="content">
              <%- document.contentRenderedWithoutLayouts %>

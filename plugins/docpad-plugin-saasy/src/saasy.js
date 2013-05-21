@@ -40,7 +40,7 @@ document.addEventListener('DOMContentLoaded', function () {
             html2 = '',
             $body = $('body');
  
-          
+      /*    
       function replaceEscapedContentHolders($node) {
         var $elems = $('body *').contents().filter(function () {
                 return this.nodeType === Node.TEXT_NODE && this.data.match(/class='saasy-wrap'/);
@@ -55,10 +55,9 @@ document.addEventListener('DOMContentLoaded', function () {
             item.text(item.html());
             wrap.contents().unwrap();
         }
-      }
+      }*/
       
-      replaceEscapedContentHolders();
-      $body.show();
+      //$body.show();
       
       for (key in $S.contentTypes) {
         if ($S.contentTypes.hasOwnProperty(key) && !$S.contentTypes.partial) {
