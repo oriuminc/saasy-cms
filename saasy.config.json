@@ -1,47 +1,80 @@
 {
-    "globalFields": {
-        "Title": "text",
-        "tags": "textarea"
-   }, 
-   "types": [{
+    "types": [
+    {
         "name": "Blog Post",
         "type": "blog",
         "layout": ["blog", "data"],
-        "fields": { 
-            "Featured Image": "image",
+        "fields": {
+            "title": {
+                "type": "text",
+                "primaryid": "true"
+            },
+            "tags": "textarea",
+            "Featured Image": "media",
             "Authored Date": "date" ,
-            "Author": "person" 
+            "Author": "person",
+            "Three Letter Country Code": {
+                "type": "text",
+                "validation": "[A-Za-z]{3}"
+            } 
         },
-        "categories": [
-            "Tech",
-            "Design"
-        ], 
-        "landingPageLayout": ["paginated-landing", "data"]
+        "categories": {
+            "names": [
+                "Tech",
+                "Design"
+            ],
+            "pageSize": 1,
+            "layout": ["paginated-landing", "data"]
+        }, 
+        "landing": {
+            "pageSize": 5,
+            "layout": ["paginated-landing", "data"]
+        }
     }, {
         "name": "Case Study",
         "type": "casestudy",
         "layout": "casestudy",
         "fields": {
+            "title": {
+                "type": "text",
+                "primaryid": "true"
+            },
+            "tags": "textarea",
             "Hero Image": "image",
             "Project URL": "url",
             "Teaser Text": "textarea",   
             "Pull Quote": "textarea"
+        },
+        "landing": {
+            "numPages": 2,
+            "layout": "paginated-landing"
         }
     }, {
         "name": "Person",
         "type": "person",
         "fields": {
-            "Name": "text",
+            "Name": {
+                "type": "text",
+                "primaryid": "true"
+            },
             "Photo": "image",
             "Quote": "text"
         }
+
     }, {
         "name": "Job Posting",
         "type": "jobposting",
-        "layout": "job",
-        "fields": { 
+        "fields": {
+            "title": {
+                "type": "text",
+                "primaryid": "true"
+            },
+            "tags": "textarea",
             "Position": "text",
             "Description": "textarea"    
         }
-    }] 
+    }],
+    "globalFields": {
+        
+   }
 }
