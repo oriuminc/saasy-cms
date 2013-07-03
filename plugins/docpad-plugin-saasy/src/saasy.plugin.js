@@ -228,7 +228,7 @@ module.exports = function(BasePlugin) {
     }
 
     function getContentTypes(cb) {
-        var configPath = config.rootPath + '/saasy.config.json.new';
+        var configPath = config.rootPath + '/saasy.config.json';
         fs.readFile(configPath, function(err, data) {
           if (err) {
             console.log('Error reading your content types from ' + configPath);
@@ -762,7 +762,7 @@ module.exports = function(BasePlugin) {
             }
             filename = req.params.filename.toLowerCase().replace(/\/|\s/g, '');
             if(filename === 'images' || filename === 'image') {
-                req.query._filter = { outContentType: {$in: [ "image/png", "image/jpeg", "image/jpeg", "image/gif", "image/tiff", "image/svg+xml" ]}};
+                req.query._filter = { outContentType: {$in: [ "image/png", "image/pjpeg", "image/jpeg", "image/gif", "image/tiff", "image/svg+xml" ]}};
             } else if(filename === 'videos' || filename === 'video') {
                 req.query._filter = { outContentType: {$in: [ "video/mpeg", "video/mp4", "video/ogg", "video/quicktime", "video/x-flv" ]}};
             } else {

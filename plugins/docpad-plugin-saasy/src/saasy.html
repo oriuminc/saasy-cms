@@ -6,7 +6,15 @@
       <a class="save-page" href="javascript:$S.API.saveAll()">Save Page</a>
       <a class="exit-edit" href="javascript:$S.API.exitEdit()">Exit Edit Mode</a>
     </div>
-    
+
+    <form action="saasy/file/" method="post"
+        enctype="multipart/form-data">
+        <input type="file" name="file" id="file"><br>
+        <input type="file" name="file2" id="file2"><br>
+        <input type="file" name="file3" id="file3"><br>
+        <input type="submit" name="submit" value="Submit">
+    </form>
+
     <div class='menu-holder'></div>
     <form id='ct-form'></form>
     <span class='saasy-msg'></span>

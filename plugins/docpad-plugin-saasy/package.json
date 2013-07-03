@@ -10,9 +10,13 @@
     ],
     "author": "Name <email> (url)",
     "maintainers": [
+        "Neil Taylor <neil.t@myplanetdigital.com> (http://www.myplanetdigital.com)",
+        "Rex Su <rex.s@myplanetdigital.com> (http://www.myplanetdigital.com)",
         "Arvin Singla <arvin@myplanetdigital.com> (http://www.myplanetdigital.com)"
     ],
     "contributors": [
+        "Neil Taylor <neil.t@myplanetdigital.com> (http://www.myplanetdigital.com)",
+        "Rex Su <rex.s@myplanetdigital.com> (http://www.myplanetdigital.com)",
         "Arvin Singla <arvin@myplanetdigital.com> (http://www.myplanetdigital.com)"
     ],
     "bugs": {
@@ -29,7 +33,8 @@
     "dependencies": {
         "cson": "x",
         "yamljs": "x",
-        "ncp": ">=0.4.2"
+        "ncp": ">=0.4.2",
+        "gitpad": "git://github.com/d9su/gitpad.git"
     },
     "main": "./src/saasy.plugin.js"
 }
